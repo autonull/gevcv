@@ -3010,5 +3010,10 @@
   "Similar layers": "Livelli simili",
   "No layers match": "Nessun livello corrisponde",
   "Layers enabled": "Livelli attivi",
-  "Change {count} layers?": "Modificare {count} livelli?"
+  "Change {count} layers?": "Modificare {count} livelli?",
+  "Date": "Data",
+  "Previous day": "Giorno precedente",
+  "Next day": "Giorno successivo",
+  "Today": "Oggi",
+  "Retry now": "Riprova ora"
 }

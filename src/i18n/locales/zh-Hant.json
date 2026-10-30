@@ -2870,5 +2870,10 @@
   "Similar layers": "類似圖層",
   "No layers match": "沒有符合的圖層",
   "Layers enabled": "已啟用圖層",
-  "Change {count} layers?": "變更 {count} 個圖層？"
+  "Change {count} layers?": "變更 {count} 個圖層？",
+  "Date": "日期",
+  "Previous day": "前一天",
+  "Next day": "後一天",
+  "Today": "今天",
+  "Retry now": "立即重試"
 }

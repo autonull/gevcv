@@ -3080,5 +3080,10 @@
   "Similar layers": "Похожие слои",
   "No layers match": "Нет подходящих слоёв",
   "Layers enabled": "Активные слои",
-  "Change {count} layers?": "Изменить слои: {count}?"
+  "Change {count} layers?": "Изменить слои: {count}?",
+  "Date": "Дата",
+  "Previous day": "Предыдущий день",
+  "Next day": "Следующий день",
+  "Today": "Сегодня",
+  "Retry now": "Повторить"
 }

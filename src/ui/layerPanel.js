@@ -249,10 +249,19 @@ export class LayerPanel {
     subscribeRowControls,
     onHiddenRefresh = () => {},
     zoomToLayer = () => false,
+    retryLayer,
     weatherClock,
+    climateViewerClock,
   }) {
     this.weatherClock = weatherClock;
+    this.climateViewerClock = climateViewerClock;
     this.zoomToLayer = zoomToLayer;
+    this.retryLayer =
+      retryLayer ??
+      (async (id) => {
+        await this.setEnabled(id, false, { origin: 'user' });
+        return this.setEnabled(id, true, { origin: 'user' });
+      });
     this.getAll = getLayers;
     this.isEnabled = isEnabled;
     this.setEnabled = setEnabled;
@@ -327,6 +336,9 @@ export class LayerPanel {
       false,
     );
     this._climateViewerSheetBody = null;
+    this._stopClimateViewerClockPlay?.();
+    this._climateViewerClockUnsub?.();
+    this._climateViewerClockUnsub = null;
   }
   _renderToggles() {
     if (this._destroyed || !this._toggleContainer) return;
@@ -490,6 +502,9 @@ export class LayerPanel {
    * 405-row result does not block the first paint.
    */
   _renderClimateViewerRows(layers, generation) {
+    this._stopClimateViewerClockPlay?.();
+    this._climateViewerClockUnsub?.();
+    this._climateViewerClockUnsub = null;
     const details = document.createElement('details');
     details.className = 'data-cv-section';
     details.open = this._climateViewerOpen === true;
@@ -554,6 +569,12 @@ export class LayerPanel {
     recents.className = 'data-cv-recents';
     recents.hidden = true;
 
+    const healthBar = document.createElement('div');
+    healthBar.className = 'data-cv-health';
+    const clockBar = document.createElement('div');
+    clockBar.className = 'data-cv-clock';
+    clockBar.hidden = true;
+
     const legend = document.createElement('div');
     legend.className = 'data-cv-legend';
     legend.setAttribute('aria-hidden', 'true');
@@ -573,7 +594,7 @@ export class LayerPanel {
 
     const list = document.createElement('div');
     list.className = 'data-cv-list';
-    body.append(packBar, toolbar, recents, legend, list);
+    body.append(packBar, toolbar, recents, healthBar, clockBar, legend, list);
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
 
@@ -645,8 +666,13 @@ export class LayerPanel {
           const state = climateViewerFolderState(entry.node, (id) =>
             this.isEnabled(id),
           );
+          const byId = new Map(layers.map((layer) => [layer.id, layer]));
           const operations = state.ids
-            .filter((id) => this.isEnabled(id) !== enable)
+            .filter((id) => {
+              if (enable && !this._climateViewerBulkEligible(byId.get(id)))
+                return false;
+              return this.isEnabled(id) !== enable;
+            })
             .map((id) =>
               this.setEnabled(id, enable, { origin: 'user' }).catch(
                 () => false,
@@ -669,18 +695,26 @@ export class LayerPanel {
     };
     const renderList = () => {
       cancel();
+      this._climateViewerClockSync?.();
       const token = renderToken;
       const query = filter.value.trim();
       const searching = query.length > 0;
+      const healthFilter = this._climateViewerHealthFilter;
+      const flat = searching || Boolean(healthFilter);
       const similar = this._climateViewerSimilar;
-      const matches =
+      let matches =
         similar && query === similar.query
           ? layers.filter((layer) => similar.ids.has(layer.id))
           : matchesFor(query);
+      if (healthFilter)
+        matches = matches.filter(
+          (layer) => this._climateViewerHealthStatus(layer) === healthFilter,
+        );
       count.textContent = `${matches.length} / ${layers.length}`;
       syncBulkState();
       list.textContent = '';
       folderRows.length = 0;
+      this._climateViewerDayNodes = [];
       if (!matches.length) {
         const note = document.createElement('div');
         note.className = 'data-cv-note';
@@ -688,7 +722,7 @@ export class LayerPanel {
         list.appendChild(note);
         return;
       }
-      const rows = searching
+      const rows = flat
         ? matches.map((layer) => ({ kind: 'layer', layer }))
         : flattenClimateViewerTree(tree, collapsed);
       let index = 0;
@@ -702,7 +736,7 @@ export class LayerPanel {
             list.appendChild(buildFolderRow(entry, entry.depth));
             continue;
           }
-          if (searching) {
+          if (flat) {
             const category = entry.layer.metadata?.category ?? '';
             if (category !== previousCategory) {
               const heading = document.createElement('div');
@@ -724,6 +758,131 @@ export class LayerPanel {
       };
       paint();
     };
+
+    const healthOrder = [
+      'ok',
+      'redirect',
+      'cors',
+      'dead',
+      'key-required',
+      'assets-missing',
+      'untested',
+    ];
+    const renderHealth = () => {
+      const counts = Object.fromEntries(
+        healthOrder.map((status) => [status, 0]),
+      );
+      for (const layer of layers) {
+        const status = this._climateViewerHealthStatus(layer);
+        if (status in counts) counts[status] += 1;
+        else counts.untested += 1;
+      }
+      healthBar.textContent = '';
+      for (const status of healthOrder) {
+        if (!counts[status]) continue;
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'data-cv-health-chip';
+        chip.dataset.health = status;
+        chip.classList.toggle(
+          'active',
+          this._climateViewerHealthFilter === status,
+        );
+        chip.setAttribute(
+          'aria-pressed',
+          this._climateViewerHealthFilter === status ? 'true' : 'false',
+        );
+        chip.textContent = `${status} ${counts[status]}`;
+        this._bind(chip, 'click', () => {
+          this._climateViewerHealthFilter =
+            this._climateViewerHealthFilter === status ? null : status;
+          renderHealth();
+          renderList();
+        });
+        healthBar.appendChild(chip);
+      }
+    };
+
+    const clock = this.climateViewerClock;
+    const clockDate = document.createElement('input');
+    clockDate.type = 'date';
+    clockDate.className = 'data-cv-date';
+    clockDate.setAttribute('aria-label', t('Date'));
+    const previousDay = document.createElement('button');
+    previousDay.type = 'button';
+    previousDay.className = 'data-cv-day-prev';
+    previousDay.textContent = '‹';
+    previousDay.setAttribute('aria-label', t('Previous day'));
+    const nextDay = document.createElement('button');
+    nextDay.type = 'button';
+    nextDay.className = 'data-cv-day-next';
+    nextDay.textContent = '›';
+    nextDay.setAttribute('aria-label', t('Next day'));
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'data-cv-day-play';
+    const today = document.createElement('button');
+    today.type = 'button';
+    today.className = 'data-cv-day-today';
+    today.textContent = t('Today');
+    clockBar.append(previousDay, clockDate, nextDay, play, today);
+
+    let clockTimer = null;
+    const stopPlay = () => {
+      if (clockTimer) clearInterval(clockTimer);
+      clockTimer = null;
+      this._climateViewerClockPlaying = false;
+    };
+    this._stopClimateViewerClockPlay = stopPlay;
+    const updateDayLabels = () => {
+      if (!clock) return;
+      const day = clock.isoDate();
+      for (const node of this._climateViewerDayNodes ?? [])
+        node.textContent = day;
+    };
+    const renderClock = () => {
+      const anyEnabled = layers.some(
+        (layer) =>
+          this._climateViewerTimeEnabled(layer) && this.isEnabled(layer.id),
+      );
+      clockBar.hidden = !clock || !anyEnabled;
+      if (clockBar.hidden) {
+        stopPlay();
+        return;
+      }
+      clockDate.value = clock.isoDate();
+      play.textContent = t(this._climateViewerClockPlaying ? 'Pause' : 'Play');
+      play.setAttribute(
+        'aria-pressed',
+        this._climateViewerClockPlaying ? 'true' : 'false',
+      );
+    };
+    this._climateViewerClockSync = renderClock;
+    this._bind(previousDay, 'click', () => clock?.step(-1));
+    this._bind(nextDay, 'click', () => clock?.step(1));
+    this._bind(today, 'click', () => clock?.setDate(new Date()));
+    this._bind(clockDate, 'change', () => {
+      if (clockDate.value) clock?.setDate(clockDate.value);
+    });
+    this._bind(play, 'click', () => {
+      if (!clock) return;
+      this._climateViewerClockPlaying = !this._climateViewerClockPlaying;
+      if (this._climateViewerClockPlaying) {
+        clockTimer = setInterval(() => clock.step(1), 500);
+      } else {
+        stopPlay();
+      }
+      renderClock();
+    });
+    if (clock) {
+      this._climateViewerClockUnsub = clock.subscribe(() => {
+        renderClock();
+        updateDayLabels();
+      });
+    }
+    renderHealth();
+    renderClock();
+    updateDayLabels();
 
     let rendered = false;
     const syncSheetState = () => {
@@ -1061,6 +1220,7 @@ export class LayerPanel {
         }
         this._climateViewerFolderSync?.();
         this._climateViewerBulkSync?.();
+        this._climateViewerClockSync?.();
       }
     });
     right.appendChild(toggle);
@@ -1072,6 +1232,13 @@ export class LayerPanel {
     meta.className = 'data-toggle-meta';
     setRowText(meta, this._buildMetaText(layer));
     row.appendChild(meta);
+    if (this._climateViewerTimeEnabled(layer) && this.climateViewerClock) {
+      const day = document.createElement('span');
+      day.className = 'data-cv-day';
+      day.textContent = this.climateViewerClock.isoDate();
+      row.appendChild(day);
+      (this._climateViewerDayNodes ??= []).push(day);
+    }
 
     const drawer = document.createElement('div');
     drawer.className = 'data-cv-drawer';
@@ -1162,6 +1329,30 @@ export class LayerPanel {
         controls.renderList();
         controls.filter.focus?.();
       });
+      const canRetry =
+        this._climateViewerHealthStatus(layer) !== 'ok' ||
+        Boolean(layer.stats?.error);
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'data-cv-retry';
+      retry.textContent = t('Retry now');
+      retry.hidden = !canRetry;
+      this._bind(retry, 'click', async () => {
+        if (retry.getAttribute('aria-disabled') === 'true') return;
+        retry.setAttribute('aria-disabled', 'true');
+        try {
+          await this.retryLayer(layer.id);
+        } catch (error) {
+          console.warn(`[Data] ${layer.id} retry error:`, error);
+        } finally {
+          retry.removeAttribute('aria-disabled');
+          const live = this.getAll().find(({ id }) => id === layer.id);
+          if (live) {
+            this._syncToggleButton(toggle, live);
+            setRowText(meta, this._buildMetaText(live));
+          }
+        }
+      });
       const copyLink = document.createElement('button');
       copyLink.type = 'button';
       copyLink.textContent = t('Copy link');
@@ -1189,7 +1380,14 @@ export class LayerPanel {
             copyMarkdown.textContent = t('Copy Markdown');
         }, 1500);
       });
-      actions.append(copySource, zoomTo, similar, copyLink, copyMarkdown);
+      actions.append(
+        copySource,
+        zoomTo,
+        similar,
+        retry,
+        copyLink,
+        copyMarkdown,
+      );
       drawer.appendChild(actions);
     };
     this._bind(info, 'click', () => {
@@ -1200,6 +1398,22 @@ export class LayerPanel {
     });
     row.appendChild(drawer);
     return row;
+  }
+
+  _climateViewerHealthStatus(layer) {
+    return layer.metadata?.health?.status || 'untested';
+  }
+
+  _climateViewerTimeEnabled(layer) {
+    return Boolean(
+      layer.metadata?.provider?.time || layer.metadata?.flags?.timeline,
+    );
+  }
+
+  _climateViewerBulkEligible(layer) {
+    return !['dead', 'key-required', 'assets-missing'].includes(
+      this._climateViewerHealthStatus(layer),
+    );
   }
 
   _climateViewerSimilarQuery(layer) {

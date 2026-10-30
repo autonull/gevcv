@@ -3010,5 +3010,10 @@
   "Similar layers": "Capas similares",
   "No layers match": "Ninguna capa coincide",
   "Layers enabled": "Capas activas",
-  "Change {count} layers?": "¿Cambiar {count} capas?"
+  "Change {count} layers?": "¿Cambiar {count} capas?",
+  "Date": "Fecha",
+  "Previous day": "Día anterior",
+  "Next day": "Día siguiente",
+  "Today": "Hoy",
+  "Retry now": "Reintentar ahora"
 }

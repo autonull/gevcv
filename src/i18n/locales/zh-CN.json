@@ -2870,5 +2870,10 @@
   "Similar layers": "类似图层",
   "No layers match": "没有匹配的图层",
   "Layers enabled": "已启用图层",
-  "Change {count} layers?": "更改 {count} 个图层？"
+  "Change {count} layers?": "更改 {count} 个图层？",
+  "Date": "日期",
+  "Previous day": "前一天",
+  "Next day": "后一天",
+  "Today": "今天",
+  "Retry now": "立即重试"
 }

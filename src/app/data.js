@@ -28,6 +28,7 @@ export function createApplicationData({
   });
   const presentation = new LayerPresentation(dataManager, {
     weatherClock: catalog?.weatherClock,
+    climateViewerClock: catalog?.climateViewerClock,
   });
   defer(() => presentation.destroy());
   onData?.(dataManager);

@@ -3010,5 +3010,10 @@
   "Similar layers": "Couches similaires",
   "No layers match": "Aucune couche ne correspond",
   "Layers enabled": "Couches actives",
-  "Change {count} layers?": "Modifier {count} couches ?"
+  "Change {count} layers?": "Modifier {count} couches ?",
+  "Date": "Date du jour",
+  "Previous day": "Jour précédent",
+  "Next day": "Jour suivant",
+  "Today": "Aujourd'hui",
+  "Retry now": "Réessayer"
 }

@@ -3080,5 +3080,10 @@
   "Similar layers": "Схожі шари",
   "No layers match": "Немає відповідних шарів",
   "Layers enabled": "Активні шари",
-  "Change {count} layers?": "Змінити шари: {count}?"
+  "Change {count} layers?": "Змінити шари: {count}?",
+  "Date": "Дата",
+  "Previous day": "Попередній день",
+  "Next day": "Наступний день",
+  "Today": "Сьогодні",
+  "Retry now": "Повторити"
 }

@@ -2870,5 +2870,10 @@
   "Similar layers": "類似レイヤー",
   "No layers match": "一致するレイヤーなし",
   "Layers enabled": "有効なレイヤー",
-  "Change {count} layers?": "{count} レイヤーを変更しますか？"
+  "Change {count} layers?": "{count} レイヤーを変更しますか？",
+  "Date": "日付",
+  "Previous day": "前の日",
+  "Next day": "次の日",
+  "Today": "今日",
+  "Retry now": "今すぐ再試行"
 }

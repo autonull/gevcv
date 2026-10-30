@@ -3010,5 +3010,10 @@
   "Similar layers": "Camadas semelhantes",
   "No layers match": "Nenhuma camada corresponde",
   "Layers enabled": "Camadas ativas",
-  "Change {count} layers?": "Alterar {count} camadas?"
+  "Change {count} layers?": "Alterar {count} camadas?",
+  "Date": "Data",
+  "Previous day": "Dia anterior",
+  "Next day": "Próximo dia",
+  "Today": "Hoje",
+  "Retry now": "Tentar novamente"
 }

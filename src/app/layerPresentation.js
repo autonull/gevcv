@@ -8,12 +8,14 @@ export class LayerPresentation {
     manager,
     {
       weatherClock,
+      climateViewerClock,
       requestRender = governorRequestRender,
       invalidateDetection = markDetectionSourcesChanged,
     } = {},
   ) {
     this.manager = manager;
     this.weatherClock = weatherClock;
+    this.climateViewerClock = climateViewerClock;
     this._panel = null;
     this.pendingVisible = false;
     this._unsubscribe = manager.subscribeActivity((change) => {
@@ -38,6 +40,11 @@ export class LayerPresentation {
     if (!this._panel)
       this._panel = new LayerPanel({
         weatherClock: this.weatherClock,
+        climateViewerClock: this.climateViewerClock,
+        retryLayer: async (id) => {
+          await this.manager.setEnabled(id, false, { origin: 'user' });
+          return this.manager.setEnabled(id, true, { origin: 'user' });
+        },
         getLayers: () => this.manager.getAll(),
         isEnabled: (id) => this.manager.isEnabled(id),
         setEnabled: (id, enabled, options) =>

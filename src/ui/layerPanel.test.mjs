@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
+import health from '../layers/climateviewer/health.json' with { type: 'json' };
 
 test('panel presentation places Transit between Street Traffic and Bike Share in Movement', () => {
   const source = readFileSync(
@@ -718,6 +719,115 @@ test('ClimateViewer rows show a busy state and surface toggle failures', async (
   } finally {
     panel.destroy();
     console.warn = previousWarn;
+    globalThis.document = previousDocument;
+  }
+});
+
+test('ClimateViewer health chips filter rows and expose the probe summary', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const ids = ['cv-live-usgs-all-hour', 'cv-pollution-bw-reactor'];
+  const layers = ids.map((id) => ({
+    id,
+    name: catalog.layers[id].name,
+    icon: '*',
+    enabled: false,
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    metadata: { ...catalog.layers[id], health: health.results[id] },
+    stats: {},
+  }));
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    assert.equal(byClass('data-cv-health-chip').textContent, 'ok 1');
+    const redirectChip = f.find((node) => node.dataset.health === 'redirect');
+    assert.ok(redirectChip);
+    const okChip = f.find((node) => node.dataset.health === 'ok');
+    okChip.click();
+    assert.equal(
+      f
+        .find((node) => node.dataset.health === 'ok')
+        .classList.contains('active'),
+      true,
+    );
+    assert.ok(f.find((node) => node.dataset.layerId === ids[1]));
+    assert.equal(
+      f.find((node) => node.dataset.layerId === ids[0]),
+      null,
+    );
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('ClimateViewer clock surface follows the shared day and labels time rows', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const { createClimateViewerClock } =
+    await import('../layers/climateviewer/clock.js');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const clock = createClimateViewerClock({
+    now: () => new Date('2026-01-02T12:00:00Z'),
+  });
+  const id = 'cv-satellites-sat15';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: true,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+    climateViewerClock: clock,
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    assert.equal(byClass('data-cv-clock').hidden, false);
+    assert.equal(byClass('data-cv-date').value, '2026-01-02');
+    const filter = byClass('data-cv-filter');
+    filter.value = id;
+    filter.dispatchEvent(new Event('input'));
+    const row = f.find((node) => node.dataset.layerId === id);
+    assert.equal(row.querySelector('.data-cv-day').textContent, '2026-01-02');
+    byClass('data-cv-day-next').click();
+    assert.equal(clock.isoDate(), '2026-01-03');
+    assert.equal(row.querySelector('.data-cv-day').textContent, '2026-01-03');
+  } finally {
+    panel.destroy();
+    clock.destroy();
     globalThis.document = previousDocument;
   }
 });
