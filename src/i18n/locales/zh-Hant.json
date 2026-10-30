@@ -2858,5 +2858,6 @@
   "routing busy — too many routes at once": "路線服務繁忙：同時請求的路線過多",
   "route proxy error": "路線代理出錯",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "ClimateViewer ({count})": "ClimateViewer ({count})"
+  "ClimateViewer ({count})": "ClimateViewer ({count})",
+  "ClimateViewer layers in this link are from a different catalog": "此連結中的 ClimateViewer 圖層來自其他目錄"
 }

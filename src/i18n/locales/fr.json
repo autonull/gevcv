@@ -2998,5 +2998,6 @@
   "Malformed cyclone snapshot": "Instantané cyclonique mal formé",
   "Cyclone request timed out": "Délai dépassé pour la requête cyclonique",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "ClimateViewer ({count})": "ClimateViewer ({count})"
+  "ClimateViewer ({count})": "ClimateViewer ({count})",
+  "ClimateViewer layers in this link are from a different catalog": "Les calques ClimateViewer de ce lien proviennent d’un autre catalogue"
 }

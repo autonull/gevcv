@@ -26,6 +26,11 @@ import {
   parseSharePath,
   shareLinkUrl,
 } from './share/shareLinkPath.js';
+import {
+  CLIMATEVIEWER_CATALOG_HASH,
+  decodeClimateViewerShareParams,
+  encodeClimateViewerLayerIds,
+} from './layers/climateviewer/shareState.js';
 
 /**
  * Share Links — URL Hash State Management
@@ -105,6 +110,10 @@ export class ShareLinkManager {
     this._scopeTerminusPct = null;
     this._mapStack = 'photoreal';
     this._layerStateProvider = null;
+    this._climateViewerStateProvider = null;
+    // A v3 payload with another catalog's `c` hash is ignored, not fatal.
+    this.climateViewerNotice = null;
+    this.rejectedClimateViewerReason = null;
     this._panelStateProvider = null;
     this._styleParamStateProvider = null;
     this._initialRestorePending = false;
@@ -203,6 +212,15 @@ export class ShareLinkManager {
     const style = Object.hasOwn(URL_TO_STYLE, params.get('style'))
       ? URL_TO_STYLE[params.get('style')]
       : 'normal';
+    const climateViewer = decodeClimateViewerShareParams(params, {
+      expectedHash: CLIMATEVIEWER_CATALOG_HASH,
+    });
+    if (!climateViewer.ok) {
+      this.rejectedClimateViewerReason = climateViewer.reason;
+      return null;
+    }
+    this.rejectedClimateViewerReason = null;
+    this.climateViewerNotice = climateViewer.notice;
     const decodedLayerState = decodeLayerStateParams(params);
     const state = {
       lat,
@@ -261,6 +279,16 @@ export class ShareLinkManager {
         ? clampScopeTerminusPct(params.get('sce'))
         : null,
       mapStack: params.get('map') || 'photoreal',
+      ...(climateViewer.status === 'absent'
+        ? {}
+        : {
+            climateViewerLayerIds: climateViewer.ids,
+            climateViewerCatalogHash:
+              climateViewer.status === 'applied'
+                ? CLIMATEVIEWER_CATALOG_HASH
+                : null,
+            climateViewerStatus: climateViewer.status,
+          }),
       layerState: decodedLayerState,
       layerStateInvalid:
         params.get('v') === '2' &&
@@ -470,6 +498,12 @@ export class ShareLinkManager {
     this._layerStateProvider = typeof provider === 'function' ? provider : null;
   }
 
+  /** Install the CV bitset source: `() => ({ catalogHash, enabledLayerIds })`. */
+  setClimateViewerStateProvider(provider) {
+    this._climateViewerStateProvider =
+      typeof provider === 'function' ? provider : null;
+  }
+
   /**
    * Install the source of the entity the camera follows, used for share links:
    * `({ nowMs }) => ({ kind, id, offset, lastKnown }) | null`, in the share
@@ -588,6 +622,15 @@ export class ShareLinkManager {
   buildLink({ nowMs = Date.now() } = {}) {
     const params = this._buildHashParams();
     if (!params) return null;
+    // The short code cannot carry the CV bitset or its catalog hash. A v3
+    // snapshot stays in the long form so the recipient reopens the same 405
+    // layer identities.
+    if (params.get('v') === '3') {
+      params.set(SHARE_CREATED_AT_PARAM, Math.floor(nowMs / 1000));
+      const url = new URL(appRootUrl(window.location.href));
+      url.hash = params.toString();
+      return url.href;
+    }
     // The long form is the one description of the live state; the code is
     // that state in the share format.
     const state = fromLegacyShareState(this._parseShareHash(params.toString()));
@@ -651,7 +694,17 @@ export class ShareLinkManager {
     if (!carto) return null;
 
     const params = new URLSearchParams();
-    params.set('v', '2');
+    const climateViewerState = this._climateViewerStateProvider?.();
+    if (climateViewerState?.catalogHash) {
+      params.set('v', '3');
+      params.set('c', climateViewerState.catalogHash);
+      params.set(
+        'cv',
+        encodeClimateViewerLayerIds(climateViewerState.enabledLayerIds),
+      );
+    } else {
+      params.set('v', '2');
+    }
     params.set('lat', Cesium.Math.toDegrees(carto.latitude).toFixed(4));
     params.set('lon', Cesium.Math.toDegrees(carto.longitude).toFixed(4));
     params.set('alt', Math.round(carto.height).toString());
@@ -725,6 +778,7 @@ export class ShareLinkManager {
     this._removeCameraChanged = null;
     this._unwatchNavigation?.();
     this._layerStateProvider = null;
+    this._climateViewerStateProvider = null;
     this._panelStateProvider = null;
     this._styleParamStateProvider = null;
     this._followSubjectProvider = null;

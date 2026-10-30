@@ -2998,5 +2998,6 @@
   "ESC to dismiss": "ESC para fechar",
   "Tip: the GEV MIC button in the dock lets you talk to the map.": "Dica: o botão GEV MIC no dock permite falar com o mapa.",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "ClimateViewer ({count})": "ClimateViewer ({count})"
+  "ClimateViewer ({count})": "ClimateViewer ({count})",
+  "ClimateViewer layers in this link are from a different catalog": "As camadas do ClimateViewer neste link são de outro catálogo"
 }

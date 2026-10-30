@@ -10,6 +10,11 @@ import {
   decodeLayerStateParams,
 } from './data/layerState.js';
 import { LayerStateCoordinator } from './data/layerStateCoordinator.js';
+import {
+  CLIMATEVIEWER_CATALOG_HASH,
+  CLIMATEVIEWER_LAYER_ORDER,
+  encodeClimateViewerLayerIds,
+} from './layers/climateviewer/shareState.js';
 
 const SHARE_A = 'v=2&lat=10.0000&lon=20.0000&alt=800&style=nvg&l=e';
 const SHARE_B = 'v=2&lat=48.8584&lon=2.2945&alt=500&style=normal&l=f';
@@ -422,4 +427,44 @@ test('the layer coordinator replaces in-flight share layers with the navigated s
     createDefaultLayerState().enabledLayerIds.includes('flights'),
   );
   coordinator.destroy();
+});
+
+test('a v3 share round-trips the CV bitset and stays in the long form', (t) => {
+  installTab(t);
+  const manager = new ShareLinkManager(fakeViewer());
+  const ids = [CLIMATEVIEWER_LAYER_ORDER[0], CLIMATEVIEWER_LAYER_ORDER[404]];
+  manager.setClimateViewerStateProvider(() => ({
+    catalogHash: CLIMATEVIEWER_CATALOG_HASH,
+    enabledLayerIds: ids,
+  }));
+  const href = manager.buildLink({ nowMs: 1_700_000_000_000 });
+  const url = new URL(href);
+  const params = new URLSearchParams(url.hash.slice(1));
+  assert.equal(params.get('v'), '3');
+  assert.equal(params.get('c'), CLIMATEVIEWER_CATALOG_HASH);
+  assert.equal(params.get('cv'), encodeClimateViewerLayerIds(ids));
+  assert.equal(url.pathname, '/');
+  assert.equal(params.get('at'), '1700000000');
+
+  const parsed = manager._parseShareHash(url.hash.slice(1));
+  assert.deepEqual(parsed.climateViewerLayerIds, ids);
+  assert.equal(parsed.climateViewerStatus, 'applied');
+  manager.destroy();
+});
+
+test('a v3 catalog mismatch keeps core fields and ignores cv', (t) => {
+  installTab(t);
+  const cv = encodeClimateViewerLayerIds([CLIMATEVIEWER_LAYER_ORDER[2]]);
+  const hash = `v=3&lat=10&lon=20&c=deadbeef&cv=${cv}`;
+  const manager = new ShareLinkManager(fakeViewer());
+  const state = manager._parseShareHash(hash);
+  assert.equal(state.lat, 10);
+  assert.deepEqual(state.climateViewerLayerIds, []);
+  assert.equal(state.climateViewerStatus, 'mismatch');
+  assert.equal(manager.climateViewerNotice, 'catalog-mismatch');
+
+  const malformed = `v=3&lat=10&lon=20&c=${CLIMATEVIEWER_CATALOG_HASH}&cv=short`;
+  assert.equal(manager._parseShareHash(malformed), null);
+  assert.equal(manager.rejectedClimateViewerReason, 'length');
+  manager.destroy();
 });

@@ -1,4 +1,5 @@
 import { LayerStateCoordinator } from '../data/layerStateCoordinator.js';
+import { ClimateViewerStateSync } from '../layers/climateviewer/shareState.js';
 import { stampInitialShareGesture } from '../navigationPolicy.js';
 import { canPresentDeferredStatusNotice } from '../loadingFeedback.js';
 import { t, msg, formatDate } from '../i18n/index.js';
@@ -123,6 +124,9 @@ export class ShareRestoration {
     this._initialShareRestoreTimeout = null;
     this._layerStateCoordinator = null;
     this._layerStateRestorePromise = null;
+    this._climateViewerState = null;
+    this._climateViewerRestorePromise = null;
+    this._climateViewerNoticeShown = false;
     // Bumped by every share opened after start-up; an older restore that
     // settles later must neither apply follow-up work nor release URL writes.
     this._shareRestoreGeneration = 0;
@@ -316,12 +320,27 @@ export class ShareRestoration {
       this.navigation._reassertNavigationHandoff(navigationToken, {
         trackingOrigin: 'programmatic',
       });
-    const layersPromise = this._layerStateCoordinator
+    const coreLayersPromise = this._layerStateCoordinator
       ? this._layerStateCoordinator.applyShareLayerState({
           shareLayerState: state.layerState || null,
           shareCreatedAtMs: state.sharedAtMs ?? null,
         })
       : null;
+    const climateViewerPromise = this._climateViewerState
+      ? this._climateViewerState.applyShareLayerIds(
+          state.climateViewerLayerIds ?? [],
+        )
+      : null;
+    this._climateViewerNoticeShown = false;
+    if (state.climateViewerStatus === 'mismatch')
+      this._handleClimateViewerNotice('catalog-mismatch');
+    const layersPromise =
+      coreLayersPromise || climateViewerPromise
+        ? Promise.all([
+            coreLayersPromise ?? Promise.resolve([]),
+            climateViewerPromise ?? Promise.resolve([]),
+          ])
+        : null;
     return this._runShareRestore(state, {
       applyCamera,
       navigationToken,
@@ -351,6 +370,21 @@ export class ShareRestoration {
         // including legacy and malformed-v2 layer payloads.
         allowLocalState: !this._initialShareState,
       });
+      this._climateViewerState?.destroy();
+      this._climateViewerState = new ClimateViewerStateSync(
+        this._dataManager,
+        this.shareLinkManager,
+      );
+      this._climateViewerRestorePromise = this._climateViewerState.start({
+        shareEnabledLayerIds: this._initialShareState
+          ? (this._initialShareState.climateViewerLayerIds ?? [])
+          : null,
+        allowLocalState: !this._initialShareState,
+      });
+      if (this.shareLinkManager?.climateViewerNotice)
+        this._handleClimateViewerNotice(
+          this.shareLinkManager.climateViewerNotice,
+        );
       if (this._initialShareSelectionSuperseded) {
         this._layerStateCoordinator.cancelPendingShareTracking(
           'superseded-before-layer-coordinator-start',
@@ -508,6 +542,27 @@ export class ShareRestoration {
     this._presentAfterStartupCover(message, noticeGeneration);
   }
 
+  _handleClimateViewerNotice(notice) {
+    if (notice !== 'catalog-mismatch' || this._climateViewerNoticeShown) return;
+    this._climateViewerNoticeShown = true;
+    const message = t(
+      'ClimateViewer layers in this link are from a different catalog',
+    );
+    if (this._resolveInitialShareRestore) {
+      void this.initialRestorePromise.then(() =>
+        this._presentAfterStartupCover(
+          message,
+          ++this._shareTrackingNoticeGeneration,
+        ),
+      );
+      return;
+    }
+    this._presentAfterStartupCover(
+      message,
+      ++this._shareTrackingNoticeGeneration,
+    );
+  }
+
   /**
    * Show a status notice once the start-up cover is gone, unless a newer
    * notice (generation) has taken its place.
@@ -576,6 +631,9 @@ export class ShareRestoration {
     this._layerStateCoordinator?.destroy();
     this._layerStateCoordinator = null;
     this._layerStateRestorePromise = null;
+    this._climateViewerState?.destroy();
+    this._climateViewerState = null;
+    this._climateViewerRestorePromise = null;
     clearTimeout(this._initialShareRestoreTimeout);
     this._initialShareRestoreTimeout = null;
     this._settleInitialShareRestore({

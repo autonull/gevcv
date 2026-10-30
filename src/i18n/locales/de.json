@@ -2928,5 +2928,6 @@
   "routing busy — too many routes at once": "Routing-Dienst ausgelastet – zu viele Routen gleichzeitig",
   "route proxy error": "Fehler des Routen-Proxys",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "ClimateViewer ({count})": "ClimateViewer ({count})"
+  "ClimateViewer ({count})": "ClimateViewer ({count})",
+  "ClimateViewer layers in this link are from a different catalog": "ClimateViewer-Ebenen in diesem Link stammen aus einem anderen Katalog"
 }
