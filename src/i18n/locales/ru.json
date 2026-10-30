@@ -3092,5 +3092,7 @@
   "Save": "Сохранить",
   "Reload": "Перезагрузить",
   "Reload to apply": "Перезагрузите для применения",
-  "Invalid proxy URL": "Неверный URL прокси"
+  "Invalid proxy URL": "Неверный URL прокси",
+  "Health stale": "Данные о состоянии устарели",
+  "Health checked {date}": "Состояние проверено {date}"
 }

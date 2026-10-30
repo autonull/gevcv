@@ -3022,5 +3022,7 @@
   "Save": "Salva",
   "Reload": "Ricarica",
   "Reload to apply": "Ricarica per applicare",
-  "Invalid proxy URL": "URL proxy non valido"
+  "Invalid proxy URL": "URL proxy non valido",
+  "Health stale": "Dati di salute obsoleti",
+  "Health checked {date}": "Salute verificata il {date}"
 }

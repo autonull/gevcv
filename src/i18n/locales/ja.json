@@ -2882,5 +2882,7 @@
   "Save": "保存",
   "Reload": "再読み込み",
   "Reload to apply": "適用するには再読み込み",
-  "Invalid proxy URL": "プロキシ URL が無効です"
+  "Invalid proxy URL": "プロキシ URL が無効です",
+  "Health stale": "ヘルスデータが古い",
+  "Health checked {date}": "ヘルスチェック日: {date}"
 }

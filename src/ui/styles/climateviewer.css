@@ -124,6 +124,18 @@
   opacity: 1;
 }
 
+.data-cv-health-stale {
+  padding: 2px 5px;
+  border: 1px solid rgb(255 178 72 / 60%);
+  border-radius: 999px;
+  color: #ffb248;
+  font:
+    9px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
 .data-cv-clock {
   display: flex;
   align-items: center;

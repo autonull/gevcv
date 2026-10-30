@@ -748,12 +748,14 @@ test('ClimateViewer health chips filter rows and expose the probe summary', asyn
       const layer = layers.find((entry) => entry.id === layerId);
       if (layer) layer.enabled = value;
     },
+    climateViewerHealth: { ...health, catalogHash: 'deadbeef' },
   });
   panel._climateViewerOpen = true;
   const byClass = (name) =>
     f.find((node) => node.className?.split(' ').includes(name));
   try {
     panel.mount(f.container);
+    assert.equal(byClass('data-cv-health-stale').textContent, 'Health stale');
     assert.equal(byClass('data-cv-health-chip').textContent, 'ok 1');
     const redirectChip = f.find((node) => node.dataset.health === 'redirect');
     assert.ok(redirectChip);

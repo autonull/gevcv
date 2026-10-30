@@ -22,6 +22,7 @@ export {
   isHealthStatus,
   summarizeHealth,
 } from './health.js';
+export { auditClimateViewerHealth } from './healthAudit.js';
 
 export const CLIMATEVIEWER_CATALOG = Object.freeze(catalog);
 export const CLIMATEVIEWER_CATALOG_VERSION = catalog.version;

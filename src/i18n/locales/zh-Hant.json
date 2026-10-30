@@ -2882,5 +2882,7 @@
   "Save": "儲存",
   "Reload": "重新載入",
   "Reload to apply": "重新載入以套用",
-  "Invalid proxy URL": "代理 URL 無效"
+  "Invalid proxy URL": "代理 URL 無效",
+  "Health stale": "健康資料已過期",
+  "Health checked {date}": "健康檢查日期：{date}"
 }

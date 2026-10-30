@@ -3092,5 +3092,7 @@
   "Save": "Зберегти",
   "Reload": "Перезавантажити",
   "Reload to apply": "Перезавантажте для застосування",
-  "Invalid proxy URL": "Недійсний URL проксі"
+  "Invalid proxy URL": "Недійсний URL проксі",
+  "Health stale": "Дані про стан застаріли",
+  "Health checked {date}": "Стан перевірено {date}"
 }

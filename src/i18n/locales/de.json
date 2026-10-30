@@ -2952,5 +2952,7 @@
   "Save": "Speichern",
   "Reload": "Neu laden",
   "Reload to apply": "Neu laden, um anzuwenden",
-  "Invalid proxy URL": "Ungültige Proxy-URL"
+  "Invalid proxy URL": "Ungültige Proxy-URL",
+  "Health stale": "Gesundheitsdaten veraltet",
+  "Health checked {date}": "Gesundheit geprüft am {date}"
 }

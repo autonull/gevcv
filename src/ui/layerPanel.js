@@ -13,6 +13,7 @@ export { localizeLayerName } from './layerNames.js';
 import { createWeatherPanel } from './weatherPanel.js';
 import { CLIMATEVIEWER_PACKS } from '../layers/climateviewer/packs.js';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
+import { auditClimateViewerHealth } from '../layers/climateviewer/healthAudit.js';
 import {
   readClimateViewerProxyUrl,
   writeClimateViewerProxyUrl,
@@ -256,9 +257,11 @@ export class LayerPanel {
     retryLayer,
     weatherClock,
     climateViewerClock,
+    climateViewerHealth,
   }) {
     this.weatherClock = weatherClock;
     this.climateViewerClock = climateViewerClock;
+    this.climateViewerHealth = climateViewerHealth;
     this.zoomToLayer = zoomToLayer;
     this.retryLayer =
       retryLayer ??
@@ -835,6 +838,20 @@ export class LayerPanel {
         else counts.untested += 1;
       }
       healthBar.textContent = '';
+      const audit = this.climateViewerHealth
+        ? auditClimateViewerHealth(catalog, this.climateViewerHealth)
+        : null;
+      if (audit?.checkedAt) {
+        healthBar.title = t('Health checked {date}', {
+          date: String(audit.checkedAt).slice(0, 10),
+        });
+      }
+      if (audit && !audit.ok) {
+        const stale = document.createElement('span');
+        stale.className = 'data-cv-health-stale';
+        stale.textContent = t('Health stale');
+        healthBar.appendChild(stale);
+      }
       for (const status of healthOrder) {
         if (!counts[status]) continue;
         const chip = document.createElement('button');

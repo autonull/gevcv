@@ -1,6 +1,7 @@
 import { resolveCatalogSources } from './sourceComposition.js';
 import { createWeatherClock } from '../layers/weather/clock.js';
 import {
+  CLIMATEVIEWER_HEALTH,
   CLIMATEVIEWER_LAYERS,
   createClimateViewerClock,
   createClimateViewerLayers,
@@ -215,6 +216,7 @@ export function createApplicationCatalog({
       surface,
       weatherClock,
       climateViewerClock,
+      climateViewerHealth: CLIMATEVIEWER_HEALTH,
     });
   } catch (error) {
     dispose();
