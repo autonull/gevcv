@@ -3008,5 +3008,7 @@
   "Copy source": "Copiar fuente",
   "Zoom to layer": "Acercar a la capa",
   "Similar layers": "Capas similares",
-  "No layers match": "Ninguna capa coincide"
+  "No layers match": "Ninguna capa coincide",
+  "Layers enabled": "Capas activas",
+  "Change {count} layers?": "¿Cambiar {count} capas?"
 }

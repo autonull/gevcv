@@ -3008,5 +3008,7 @@
   "Copy source": "Copia sorgente",
   "Zoom to layer": "Zoom sulla capa",
   "Similar layers": "Livelli simili",
-  "No layers match": "Nessun livello corrisponde"
+  "No layers match": "Nessun livello corrisponde",
+  "Layers enabled": "Livelli attivi",
+  "Change {count} layers?": "Modificare {count} livelli?"
 }

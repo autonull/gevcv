@@ -3078,5 +3078,7 @@
   "Copy source": "Копіювати джерело",
   "Zoom to layer": "Наблизити до шару",
   "Similar layers": "Схожі шари",
-  "No layers match": "Немає відповідних шарів"
+  "No layers match": "Немає відповідних шарів",
+  "Layers enabled": "Активні шари",
+  "Change {count} layers?": "Змінити шари: {count}?"
 }

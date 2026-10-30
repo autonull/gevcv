@@ -2868,5 +2868,7 @@
   "Copy source": "複製來源",
   "Zoom to layer": "縮放至圖層",
   "Similar layers": "類似圖層",
-  "No layers match": "沒有符合的圖層"
+  "No layers match": "沒有符合的圖層",
+  "Layers enabled": "已啟用圖層",
+  "Change {count} layers?": "變更 {count} 個圖層？"
 }

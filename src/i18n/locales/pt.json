@@ -3008,5 +3008,7 @@
   "Copy source": "Copiar fonte",
   "Zoom to layer": "Aproximar na camada",
   "Similar layers": "Camadas semelhantes",
-  "No layers match": "Nenhuma camada corresponde"
+  "No layers match": "Nenhuma camada corresponde",
+  "Layers enabled": "Camadas ativas",
+  "Change {count} layers?": "Alterar {count} camadas?"
 }

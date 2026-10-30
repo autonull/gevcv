@@ -3008,5 +3008,7 @@
   "Copy source": "Copier la source",
   "Zoom to layer": "Zoomer sur la couche",
   "Similar layers": "Couches similaires",
-  "No layers match": "Aucune couche ne correspond"
+  "No layers match": "Aucune couche ne correspond",
+  "Layers enabled": "Couches actives",
+  "Change {count} layers?": "Modifier {count} couches ?"
 }

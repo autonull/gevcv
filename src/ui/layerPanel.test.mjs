@@ -604,6 +604,64 @@ test('ClimateViewer shows an empty state and tracks its full-screen sheet class'
   }
 });
 
+test('ClimateViewer refreshes its global enabled counter and confirms large bulk edits', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  const previousConfirm = globalThis.confirm;
+  globalThis.document = f.document;
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  const asks = [];
+  globalThis.confirm = (message) => {
+    asks.push(message);
+    return false;
+  };
+  try {
+    panel.mount(f.container);
+    assert.equal(byClass('data-cv-enabled').textContent, '0 ON');
+    const filter = byClass('data-cv-filter');
+    filter.value = 'usgs-all-hour';
+    filter.dispatchEvent(new Event('input'));
+    byClass('data-toggle-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(byClass('data-cv-enabled').textContent, '1 ON');
+
+    assert.equal(panel._confirmClimateViewerBulk(50), true);
+    assert.equal(panel._confirmClimateViewerBulk(51), false);
+    assert.deepEqual(asks, ['Change 51 layers?']);
+  } finally {
+    panel.destroy();
+    if (previousConfirm === undefined) delete globalThis.confirm;
+    else globalThis.confirm = previousConfirm;
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

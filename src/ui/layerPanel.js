@@ -513,6 +513,10 @@ export class LayerPanel {
     const count = document.createElement('span');
     count.className = 'data-cv-count';
     count.setAttribute('aria-live', 'polite');
+    const enabledCount = document.createElement('span');
+    enabledCount.className = 'data-cv-enabled';
+    enabledCount.setAttribute('aria-live', 'polite');
+    enabledCount.setAttribute('aria-label', t('Layers enabled'));
     const clear = document.createElement('button');
     clear.type = 'button';
     clear.className = 'data-cv-clear';
@@ -523,7 +527,7 @@ export class LayerPanel {
     copyAtlas.textContent = msg('MD');
     copyAtlas.setAttribute('aria-label', t('Copy atlas (Markdown)'));
     copyAtlas.title = t('Copy atlas (Markdown)');
-    toolbar.append(filter, count, clear, copyAtlas);
+    toolbar.append(filter, count, enabledCount, clear, copyAtlas);
 
     const packBar = document.createElement('div');
     packBar.className = 'data-cv-packs';
@@ -622,6 +626,12 @@ export class LayerPanel {
       }
     };
     this._climateViewerFolderSync = syncFolderStates;
+    const syncBulkState = () => {
+      const enabled = layers.filter((layer) => this.isEnabled(layer.id)).length;
+      enabledCount.textContent = `${enabled} ${t('ON')}`;
+      clear.hidden = enabled === 0;
+    };
+    this._climateViewerBulkSync = syncBulkState;
     const buildFolderRow = (entry, depth) => {
       const folderRow = this._createClimateViewerFolderRow(entry.node, {
         depth,
@@ -642,6 +652,11 @@ export class LayerPanel {
                 () => false,
               ),
             );
+          if (
+            operations.length > 50 &&
+            !this._confirmClimateViewerBulk(operations.length)
+          )
+            return;
           await Promise.allSettled(operations);
           renderList();
         },
@@ -663,8 +678,7 @@ export class LayerPanel {
           ? layers.filter((layer) => similar.ids.has(layer.id))
           : matchesFor(query);
       count.textContent = `${matches.length} / ${layers.length}`;
-      const enabled = layers.filter((layer) => this.isEnabled(layer.id)).length;
-      clear.hidden = enabled === 0;
+      syncBulkState();
       list.textContent = '';
       folderRows.length = 0;
       if (!matches.length) {
@@ -776,6 +790,10 @@ export class LayerPanel {
       this._clearingClimateViewer = true;
       clear.disabled = true;
       try {
+        const enabled = layers.filter((layer) =>
+          this.isEnabled(layer.id),
+        ).length;
+        if (enabled > 50 && !this._confirmClimateViewerBulk(enabled)) return;
         for (const layer of layers) {
           if (this.isEnabled(layer.id))
             await this.setEnabled(layer.id, false, { origin: 'user' });
@@ -834,6 +852,12 @@ export class LayerPanel {
       );
     }
     await Promise.allSettled(operations);
+  }
+
+  _confirmClimateViewerBulk(count) {
+    if (count <= 50) return true;
+    if (typeof globalThis.confirm !== 'function') return true;
+    return globalThis.confirm(t('Change {count} layers?', { count }));
   }
 
   _recentClimateViewerSearches() {
@@ -1029,6 +1053,7 @@ export class LayerPanel {
         }
         toggle.removeAttribute('aria-disabled');
         this._climateViewerFolderSync?.();
+        this._climateViewerBulkSync?.();
       }
     });
     right.appendChild(toggle);

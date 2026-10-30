@@ -3078,5 +3078,7 @@
   "Copy source": "Копировать источник",
   "Zoom to layer": "Приблизить к слою",
   "Similar layers": "Похожие слои",
-  "No layers match": "Нет подходящих слоёв"
+  "No layers match": "Нет подходящих слоёв",
+  "Layers enabled": "Активные слои",
+  "Change {count} layers?": "Изменить слои: {count}?"
 }

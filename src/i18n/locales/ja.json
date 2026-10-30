@@ -2868,5 +2868,7 @@
   "Copy source": "ソースをコピー",
   "Zoom to layer": "レイヤーにズーム",
   "Similar layers": "類似レイヤー",
-  "No layers match": "一致するレイヤーなし"
+  "No layers match": "一致するレイヤーなし",
+  "Layers enabled": "有効なレイヤー",
+  "Change {count} layers?": "{count} レイヤーを変更しますか？"
 }
