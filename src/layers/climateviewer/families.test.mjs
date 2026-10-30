@@ -295,7 +295,7 @@ test('zoomTo flies to the vector data bounds', async () => {
   assert.equal(viewer.flights[0].duration, 1.2);
 });
 
-test('a time-enabled imagery layer rebuilds when the clock advances', () => {
+test('a time-enabled imagery layer rebuilds when the clock advances', async () => {
   const viewer = fakeViewer();
   const listeners = new Set();
   const clock = {
@@ -317,9 +317,10 @@ test('a time-enabled imagery layer rebuilds when the clock advances', () => {
       createImagery: (provider) => ({ provider }),
     },
   );
-  assert.equal(family.attach(viewer), true);
+  assert.equal(await family.attach(viewer), true);
   assert.equal(viewer.imagery.length, 1);
   for (const listener of listeners) listener(clock);
+  await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(viewer.imagery.length, 1);
   assert.deepEqual(times, ['2026-01-01', '2026-01-01']);
   family.detach();
@@ -355,4 +356,19 @@ test('spotlight opacity dims vector billboards and restores their colour', async
   assert.ok(Math.abs(source.entities.values[0].billboard.color.alpha - 0.28) < 1e-9);
   family.setSpotlightOpacity(1);
   assert.ok(Math.abs(source.entities.values[0].billboard.color.alpha - 0.8) < 1e-9);
+});
+
+test('an async imagery provider is awaited before the layer is added', async () => {
+  const viewer = fakeViewer();
+  const layer = { provider: {} };
+  const family = createImageryFamily(
+    { ...definition, family: 'arcgis' },
+    {
+      providerFor: async () => ({}),
+      createImagery: (provider) => ({ ...layer, provider }),
+    },
+  );
+  assert.equal(await family.attach(viewer), true);
+  assert.equal(viewer.imagery.length, 1);
+  assert.equal(family.stats().status, 'ok');
 });

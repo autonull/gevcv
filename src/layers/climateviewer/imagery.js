@@ -21,13 +21,14 @@ function templateUrl(url) {
  * Build the Cesium provider for one catalog layer.
  * Mirrors the ClimateViewer 3D runtime: both ArcGIS types are imagery layers.
  */
-export function createImageryProvider(layer, { time = null } = {}) {
+export async function createImageryProvider(layer, { time = null } = {}) {
   const { provider } = layer;
   const sublayers = provider.sublayers?.join(',') || undefined;
   switch (provider.kind) {
     case 'arcgis':
-      return new Cesium.ArcGisMapServerImageryProvider({
-        url: provider.url,
+      // Cesium 1.138 constructs ArcGIS providers through fromUrl so the
+      // provider receives its Resource before any tile request.
+      return Cesium.ArcGisMapServerImageryProvider.fromUrl(provider.url, {
         ...(sublayers ? { layers: sublayers } : {}),
         enablePickFeatures: layer.flags.noFeatures !== true,
       });

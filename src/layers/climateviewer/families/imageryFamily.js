@@ -44,10 +44,12 @@ export function createImageryFamily(
     });
   }
 
-  function attach(target) {
+  async function attach(target) {
     viewer = target;
     try {
-      const provider = providerFor(definition, { time: timeParameter() });
+      const provider = await providerFor(definition, {
+        time: timeParameter(),
+      });
       imageryLayer = createImagery(provider);
       applySpotlight();
       viewer.imageryLayers.add(imageryLayer);

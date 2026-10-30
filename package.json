@@ -84,6 +84,9 @@
     "vite-plugin-cesium": "^1.2.23",
     "ws": "^8.21.0"
   },
+  "overrides": {
+    "@cesium/widgets": "14.3.0"
+  },
   "exports": {
     "./infrastructure": "./src/data/infrastructure.js",
     "./infrastructure/geojson": "./src/data/localGeojsonCore.js",
