@@ -444,7 +444,9 @@ export class LayerPanel {
     details.className = 'data-cv-section';
     const summary = document.createElement('summary');
     summary.className = 'data-layer-group-heading';
-    summary.textContent = t('ClimateViewer ({count})', { count: layers.length });
+    summary.textContent = t('ClimateViewer ({count})', {
+      count: layers.length,
+    });
     details.appendChild(summary);
 
     const body = document.createElement('div');
@@ -487,9 +489,9 @@ export class LayerPanel {
       if (matches.length > shown.length) {
         const note = document.createElement('div');
         note.className = 'data-cv-note';
-        note.textContent = `${shown.length} / ${matches.length} — ${
-          msg('refine the filter to see more')
-        }`;
+        note.textContent = `${shown.length} / ${matches.length} — ${msg(
+          'refine the filter to see more',
+        )}`;
         list.appendChild(note);
       }
     };
@@ -584,7 +586,8 @@ export class LayerPanel {
     if (flags.large) badges.push({ kind: 'large', label: 'L' });
     if (flags.timeline) badges.push({ kind: 'time', label: 'T' });
     if (flags.proxy) badges.push({ kind: 'proxy', label: 'P' });
-    if (layer.metadata?.role === 'basemap') badges.push({ kind: 'base', label: 'B' });
+    if (layer.metadata?.role === 'basemap')
+      badges.push({ kind: 'base', label: 'B' });
     if (layer.keyRequired) badges.push({ kind: 'key', label: 'K' });
     return badges;
   }

@@ -3,7 +3,9 @@ import * as Cesium from 'cesium';
 /** A layer that cannot render without a key the browser does not own. */
 export class ClimateViewerKeyRequiredError extends Error {
   constructor(layer) {
-    super(`${layer.name}: imagery set "${layer.provider.imagerySet}" needs a Bing key`);
+    super(
+      `${layer.name}: imagery set "${layer.provider.imagerySet}" needs a Bing key`,
+    );
     this.name = 'ClimateViewerKeyRequiredError';
   }
 }

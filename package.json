@@ -55,6 +55,8 @@
     "qa:transit": "node scripts/qa-transit.mjs",
     "mcp": "node server/mcp/stdio.js",
     "sync:cv": "node scripts/sync-cv-catalog.mjs",
+    "health:cv": "node scripts/sync-cv-health.mjs",
+    "qa:cv": "npm run sync:cv && npm run screenshots",
     "screenshots": "VITE_QA_HANDLE=1 npm run build && node scripts/qa/tour.mjs",
     "prebuild": "node scripts/sync-cv-if-available.mjs",
     "predev": "node scripts/sync-cv-if-available.mjs"

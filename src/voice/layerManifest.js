@@ -17,9 +17,7 @@
  * @module voice/layerManifest
  */
 
-import climateViewerCatalog from '../layers/climateviewer/catalog.json' with {
-  type: 'json',
-};
+import climateViewerCatalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 
 /**
  * Field type shorthands: n = number, t = text, f = flag (boolean),
