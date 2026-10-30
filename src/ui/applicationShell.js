@@ -23,6 +23,7 @@ import { LocationNavigation } from './locationNavigation.js';
 import { bindClearLayersControl } from './layers.js';
 import { bindCameraOrientationControls } from './cameraOrientationControls.js';
 import { createMapSourceControls } from './mapSource.js';
+import { createAtlasMode } from '../atlasMode.js';
 import { STYLES } from './effects.js';
 import { isHudLayout } from '../hudLayouts.js';
 import {
@@ -137,6 +138,7 @@ export class StyleManager extends ShellFacade {
       readLayers: () => this._dataManager?.getAll?.() || [],
     });
     this.viewer = viewer;
+    this._atlasMode = createAtlasMode(viewer);
     this.mapStackController = mapStackController;
     this.placeSearch = placeSearch;
 
@@ -545,6 +547,7 @@ export class StyleManager extends ShellFacade {
         _detectionOpacitySlider: this._detectionOpacitySlider,
         _celestialBtn: this._celestialBtn,
         _models3dBtn: this._models3dBtn,
+        _atlasModeBtn: this._atlasModeBtn,
         _scopeFeatherValue: this._scopeFeatherValue,
         _sharpenSliderValue: this._sharpenSliderValue,
         _detectionDensityValue: this._detectionDensityValue,
@@ -555,6 +558,7 @@ export class StyleManager extends ShellFacade {
         _syncShareState: (...args) => this._syncShareState(...args),
         _toggleOrbit: (...args) => this._toggleOrbit(...args),
         toggleCleanView: (...args) => this.toggleCleanView(...args),
+        setAtlasMode: (...args) => this.setAtlasMode(...args),
         _toggleCctvEnabled: (...args) => this._toggleCctvEnabled(...args),
         _setBloomEnabled: (...args) => this._setBloomEnabled(...args),
         _setBloomIntensity: (...args) => this._setBloomIntensity(...args),
@@ -1296,6 +1300,21 @@ export class StyleManager extends ShellFacade {
     this._scheduleLeftPanelLayout();
   }
 
+  /**
+   * Toggles Atlas Mode: a flat, north-up browse view for raster layers.
+   * @param {boolean} [forceEnabled] - Explicit on/off. Omit to toggle.
+   * @returns {boolean} Whether Atlas Mode is active afterwards.
+   */
+  setAtlasMode(forceEnabled) {
+    const active = this._atlasMode.set(forceEnabled);
+    document.body.classList.toggle('atlas-mode', active);
+    if (this._atlasModeBtn) {
+      this._atlasModeBtn.classList.toggle('active', active);
+      this._atlasModeBtn.setAttribute('aria-pressed', String(active));
+    }
+    return active;
+  }
+
   // ── Public control facade ──────────────────────────────────────────────
   // Deliberate API for voice tools and scripting. Every setter keeps the DOM
   // sliders, share-link state, and scene snapshots in sync, and returns
@@ -1787,6 +1806,7 @@ export class StyleManager extends ShellFacade {
     this._feedback.destroy();
 
     this._displayBindings.destroy();
+    this._atlasMode?.destroy();
     this._mapSourceControls?.destroy();
     this._cameraOrientationControls?.destroy();
     this._clearLayersControl?.destroy();

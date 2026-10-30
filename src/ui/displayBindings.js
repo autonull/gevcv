@@ -90,6 +90,7 @@ export class DisplayBindings {
           this._syncShareState();
         },
         toggleCctv: () => this._toggleCctvEnabled(),
+        toggleAtlas: () => this.setAtlasMode(),
       },
     });
 
@@ -118,6 +119,7 @@ export class DisplayBindings {
         sonarSectorSlider: this._cyberSonarSector,
         cleanViewButton: this._cleanViewBtn,
         cleanViewExitButton: this._cleanViewExitBtn,
+        atlasButton: this._atlasModeBtn,
         densitySlider: this._detectionDensitySlider,
         detectionButton: this._detectionBtn,
         allocationButtons: this._detectionAllocationBtns,
@@ -167,6 +169,7 @@ export class DisplayBindings {
         },
         toggleCleanView: () => this.toggleCleanView(),
         exitCleanView: () => this.toggleCleanView(false),
+        toggleAtlas: () => this.setAtlasMode(),
         setDensity: (value) => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this.claimDetection();

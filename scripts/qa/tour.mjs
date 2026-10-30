@@ -236,6 +236,17 @@ try {
   await page.waitForTimeout(4000);
   await shot(page, '05-globe-with-cv-layer.png');
 
+  const atlasPressed = await page.evaluate(() => {
+    const button = document.getElementById('atlas-mode-toggle');
+    if (!button) return null;
+    button.click();
+    return button.getAttribute('aria-pressed');
+  });
+  check('Atlas Mode toggles from the display controls', atlasPressed === 'true',
+    atlasPressed ?? 'missing button');
+  await page.waitForTimeout(1600);
+  await shot(page, '06-atlas-mode.png');
+
   const registry = await page.evaluate(() => ({
     layers: window.__gevData.layers.size,
     cv: [...window.__gevData.layers.keys()].filter((id) => id.startsWith('cv-')).length,

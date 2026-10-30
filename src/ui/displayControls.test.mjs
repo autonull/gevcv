@@ -184,3 +184,16 @@ test('the native Scope checkbox reads checked state on change and disposes its l
     ['feather', 200],
   ]);
 });
+
+test('the Atlas Mode button is an optional owned display action', () => {
+  const atlasButton = element();
+  let calls = 0;
+  const control = bindDisplayControls({
+    elements: { atlasButton },
+    actions: { toggleAtlas: () => calls++ },
+  });
+  atlasButton.dispatchEvent(new Event('click'));
+  control.destroy();
+  atlasButton.dispatchEvent(new Event('click'));
+  assert.equal(calls, 1);
+});
