@@ -2884,5 +2884,7 @@
   "Reload to apply": "適用するには再読み込み",
   "Invalid proxy URL": "プロキシ URL が無効です",
   "Health stale": "ヘルスデータが古い",
-  "Health checked {date}": "ヘルスチェック日: {date}"
+  "Health checked {date}": "ヘルスチェック日: {date}",
+  "Animate": "アニメーション",
+  "Stop": "停止"
 }

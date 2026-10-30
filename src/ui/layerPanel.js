@@ -1004,7 +1004,7 @@ export class LayerPanel {
     this._bind(clockDate, 'change', () => {
       if (clockDate.value) clock?.setDate(clockDate.value);
     });
-    this._bind(play, 'click', () => {
+    const togglePlay = () => {
       if (!clock) return;
       this._climateViewerClockPlaying = !this._climateViewerClockPlaying;
       if (this._climateViewerClockPlaying) {
@@ -1013,7 +1013,9 @@ export class LayerPanel {
         stopPlay();
       }
       renderClock();
-    });
+    };
+    this._climateViewerPlayToggle = togglePlay;
+    this._bind(play, 'click', togglePlay);
     if (clock) {
       this._climateViewerClockUnsub = clock.subscribe(() => {
         renderClock();
@@ -1446,6 +1448,27 @@ export class LayerPanel {
       this._bind(zoomTo, 'click', () => {
         this.zoomToLayer(layer.id);
       });
+      const animate = document.createElement('button');
+      animate.type = 'button';
+      animate.className = 'data-cv-animate';
+      animate.hidden = !layer.metadata?.provider?.time;
+      animate.textContent = this._climateViewerClockPlaying
+        ? t('Stop')
+        : t('Animate');
+      animate.setAttribute(
+        'aria-pressed',
+        this._climateViewerClockPlaying ? 'true' : 'false',
+      );
+      this._bind(animate, 'click', () => {
+        this._climateViewerPlayToggle?.();
+        animate.textContent = this._climateViewerClockPlaying
+          ? t('Stop')
+          : t('Animate');
+        animate.setAttribute(
+          'aria-pressed',
+          this._climateViewerClockPlaying ? 'true' : 'false',
+        );
+      });
       const similar = document.createElement('button');
       similar.type = 'button';
       similar.className = 'data-cv-similar';
@@ -1523,6 +1546,7 @@ export class LayerPanel {
       actions.append(
         copySource,
         zoomTo,
+        animate,
         similar,
         retry,
         copyLink,

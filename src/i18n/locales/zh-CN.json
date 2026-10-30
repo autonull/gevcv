@@ -2884,5 +2884,7 @@
   "Reload to apply": "重新加载以应用",
   "Invalid proxy URL": "代理 URL 无效",
   "Health stale": "健康数据已过期",
-  "Health checked {date}": "健康检查日期：{date}"
+  "Health checked {date}": "健康检查日期：{date}",
+  "Animate": "动画",
+  "Stop": "停止"
 }

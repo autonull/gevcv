@@ -920,6 +920,66 @@ test('ClimateViewer proxy preference validates, saves, and clears', async () => 
   }
 });
 
+test('time providers offer an opt-in drawer animation control', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const { createClimateViewerClock } =
+    await import('../layers/climateviewer/clock.js');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const clock = createClimateViewerClock({
+    now: () => new Date('2026-01-02T12:00:00Z'),
+  });
+  const id = 'cv-satellites-modis-terra-correctedreflectance-truecolor';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: true,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+    climateViewerClock: clock,
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    const filter = byClass('data-cv-filter');
+    filter.value = id;
+    filter.dispatchEvent(new Event('input'));
+    const row = f.find((node) => node.dataset.layerId === id);
+    row.querySelector('.data-cv-info').click();
+    const animate = row.querySelector('.data-cv-animate');
+    assert.equal(animate.hidden, false);
+    assert.equal(animate.textContent, 'Animate');
+    animate.click();
+    assert.equal(animate.textContent, 'Stop');
+    assert.equal(animate.getAttribute('aria-pressed'), 'true');
+    animate.click();
+    assert.equal(animate.textContent, 'Animate');
+    assert.equal(animate.getAttribute('aria-pressed'), 'false');
+  } finally {
+    panel.destroy();
+    clock.destroy();
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

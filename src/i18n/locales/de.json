@@ -2954,5 +2954,7 @@
   "Reload to apply": "Neu laden, um anzuwenden",
   "Invalid proxy URL": "Ungültige Proxy-URL",
   "Health stale": "Gesundheitsdaten veraltet",
-  "Health checked {date}": "Gesundheit geprüft am {date}"
+  "Health checked {date}": "Gesundheit geprüft am {date}",
+  "Animate": "Animieren",
+  "Stop": "Stopp"
 }

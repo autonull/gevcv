@@ -3094,5 +3094,7 @@
   "Reload to apply": "Перезагрузите для применения",
   "Invalid proxy URL": "Неверный URL прокси",
   "Health stale": "Данные о состоянии устарели",
-  "Health checked {date}": "Состояние проверено {date}"
+  "Health checked {date}": "Состояние проверено {date}",
+  "Animate": "Анимировать",
+  "Stop": "Остановить"
 }
