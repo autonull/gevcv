@@ -65,6 +65,21 @@
   background: var(--panel-bg, #0b0f14);
 }
 
+.data-cv-status {
+  padding: 3px 4px 0;
+  color: #f0b46c;
+  font-size: 10px;
+}
+
+.data-cv-status[hidden] {
+  display: none;
+}
+
+.data-cv-pack.is-active {
+  border-color: rgb(120 220 160 / 60%);
+  color: #78dca0;
+}
+
 .data-cv-recents {
   display: flex;
   flex-wrap: wrap;

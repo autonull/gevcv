@@ -3009,6 +3009,7 @@
   "Zoom to layer": "Aproximar na camada",
   "Similar layers": "Camadas semelhantes",
   "No layers match": "Nenhuma camada corresponde",
+  "Layer not found: {id}": "Camada não encontrada: {id}",
   "Layers enabled": "Camadas ativas",
   "Change {count} layers?": "Alterar {count} camadas?",
   "Date": "Data",

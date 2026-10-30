@@ -3079,6 +3079,7 @@
   "Zoom to layer": "Приблизить к слою",
   "Similar layers": "Похожие слои",
   "No layers match": "Нет подходящих слоёв",
+  "Layer not found: {id}": "Слой не найден: {id}",
   "Layers enabled": "Активные слои",
   "Change {count} layers?": "Изменить слои: {count}?",
   "Date": "Дата",

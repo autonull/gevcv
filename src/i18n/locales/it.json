@@ -3009,6 +3009,7 @@
   "Zoom to layer": "Zoom sulla capa",
   "Similar layers": "Livelli simili",
   "No layers match": "Nessun livello corrisponde",
+  "Layer not found: {id}": "Livello non trovato: {id}",
   "Layers enabled": "Livelli attivi",
   "Change {count} layers?": "Modificare {count} livelli?",
   "Date": "Data",

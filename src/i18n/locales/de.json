@@ -2939,6 +2939,7 @@
   "Zoom to layer": "Auf Layer zoomen",
   "Similar layers": "Ähnliche Layer",
   "No layers match": "Keine Layer passen",
+  "Layer not found: {id}": "Layer nicht gefunden: {id}",
   "Layers enabled": "Aktive Layer",
   "Change {count} layers?": "{count} Layer ändern?",
   "Date": "Datum",

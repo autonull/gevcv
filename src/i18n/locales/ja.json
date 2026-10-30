@@ -2869,6 +2869,7 @@
   "Zoom to layer": "レイヤーにズーム",
   "Similar layers": "類似レイヤー",
   "No layers match": "一致するレイヤーなし",
+  "Layer not found: {id}": "レイヤーが見つかりません: {id}",
   "Layers enabled": "有効なレイヤー",
   "Change {count} layers?": "{count} レイヤーを変更しますか？",
   "Date": "日付",

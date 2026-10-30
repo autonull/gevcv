@@ -1026,3 +1026,65 @@ test('the Weather readout receives enabled air-quality alongside weather layers'
     ],
   );
 });
+
+test('ClimateViewer marks the active pack and resolves deep links', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { getClimateViewerPack } =
+    await import('../layers/climateviewer/packs.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const pack = getClimateViewerPack('disaster-watch');
+  const layers = pack.layers.map((id) => ({
+    id,
+    name: catalog.layers[id].name,
+    icon: '*',
+    enabled: false,
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    metadata: catalog.layers[id],
+    stats: {},
+  }));
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (id) => layers.find((layer) => layer.id === id)?.enabled,
+    setEnabled: async (id, value) => {
+      const layer = layers.find((entry) => entry.id === id);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  try {
+    panel.mount(f.container);
+    await panel._applyClimateViewerPack(pack);
+    panel._climateViewerBulkSync();
+    const packButton = f.find(
+      (node) =>
+        node.className?.split(' ').includes('data-cv-pack') &&
+        node.textContent === pack.name,
+    );
+    assert.ok(packButton);
+    assert.equal(packButton.getAttribute('aria-pressed'), 'true');
+    assert.equal(packButton.classList.contains('is-active'), true);
+
+    assert.equal(await panel.openClimateViewerLayer('cv-missing'), false);
+    const status = f.find((node) =>
+      node.className?.split(' ').includes('data-cv-status'),
+    );
+    assert.equal(status.hidden, false);
+    assert.match(status.textContent, /cv-missing/);
+
+    const target = pack.layers[0];
+    assert.equal(await panel.openClimateViewerLayer(target), true);
+    assert.equal(status.hidden, true);
+    const row = f.find((node) => node.dataset?.layerId === target);
+    assert.ok(row);
+    const info = row.querySelector('.data-cv-info');
+    assert.equal(info.getAttribute('aria-expanded'), 'true');
+    assert.equal(f.document.activeElement, info);
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});

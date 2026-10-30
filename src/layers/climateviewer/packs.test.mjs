@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   CLIMATEVIEWER_PACKS,
   STARTER_PACK_ID,
+  activeClimateViewerPackId,
   getClimateViewerPack,
   starterClimateViewerLayerIds,
 } from './packs.js';
@@ -31,6 +32,14 @@ test('all four packs are non-empty and reference catalog layers', () => {
     starterClimateViewerLayerIds(),
     getClimateViewerPack('disaster-watch').layers,
   );
+});
+
+test('the active pack is the one whose layer set exactly matches', () => {
+  const pack = getClimateViewerPack('energy-grid');
+  assert.equal(activeClimateViewerPackId(pack.layers), 'energy-grid');
+  assert.equal(activeClimateViewerPackId([]), null);
+  assert.equal(activeClimateViewerPackId(pack.layers.slice(1)), null);
+  assert.equal(activeClimateViewerPackId([...pack.layers, 'cv-extra']), null);
 });
 
 test('deep links carry a layer id and drop stale hash state', () => {
