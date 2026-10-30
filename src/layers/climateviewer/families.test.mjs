@@ -57,6 +57,24 @@ function fakeSource(count = 2) {
   };
 }
 
+function fakeProgressiveSource(count = 2) {
+  let values = Array.from({ length: count }, (_, id) => ({ id }));
+  return {
+    show: false,
+    entities: {
+      get values() {
+        return values;
+      },
+      removeAll() {
+        values = [];
+      },
+      add(entity) {
+        values.push(entity);
+      },
+    },
+  };
+}
+
 test('every catalog basemap becomes one exclusive map-stack source', () => {
   const sources = createClimateViewerBasemapSources();
   assert.equal(sources.length, 11);
@@ -221,6 +239,38 @@ test('a vector layer reports loaded entity count', async () => {
   assert.equal(family.stats().count, 3);
   family.detach();
   assert.equal(viewer.sources.length, 0);
+});
+
+test('large vector payloads attach empty and fill progressively without truncation', async () => {
+  const viewer = fakeViewer();
+  const source = fakeProgressiveSource(7);
+  const family = createVectorFamily(definition, {
+    loadVector: async () => source,
+    progressiveThreshold: 3,
+    progressiveChunk: 2,
+  });
+  const attaching = family.attach(viewer);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const mid = family.stats();
+  assert.equal(mid.count, 7);
+  assert.equal(mid.progressive, true);
+  assert.ok(mid.rendered < 7);
+  assert.equal(await attaching, true);
+  const done = family.stats();
+  assert.equal(done.count, 7);
+  assert.equal(done.rendered, 7);
+  assert.equal(done.progressive, false);
+  assert.equal(source.entities.values.length, 7);
+  family.detach();
+  assert.deepEqual(
+    {
+      count: family.stats().count,
+      rendered: family.stats().rendered,
+      progressive: family.stats().progressive,
+      status: family.stats().status,
+    },
+    { count: 0, rendered: 0, progressive: false, status: 'idle' },
+  );
 });
 
 test('zoomTo flies to the vector data bounds', async () => {

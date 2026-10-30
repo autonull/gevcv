@@ -3,8 +3,8 @@ import * as Cesium from 'cesium';
 /** ClimateViewer marker images are large PNGs; cap them to a readable pixel size. */
 export const MARKER_PIXELS = 32;
 
-/** Ceiling for layers ClimateViewer marks as large. */
-export const LARGE_LAYER_ENTITY_CAP = 20_000;
+/** Above this entity count the family attaches the source and fills it in chunks. */
+export const PROGRESSIVE_ENTITY_THRESHOLD = 5_000;
 
 function markerImage(layer, resolveAsset) {
   if (!layer.markerIcon) return null;
@@ -23,13 +23,6 @@ export function applyMarkerOverrides(dataSource, layer, resolveAsset) {
     entity.billboard.height = MARKER_PIXELS;
     entity.billboard.scale = scale;
   }
-}
-
-function trimEntities(dataSource, cap) {
-  const values = dataSource.entities.values;
-  if (values.length <= cap) return values.length;
-  for (const entity of values.slice(cap)) dataSource.entities.remove(entity);
-  return cap;
 }
 
 /** Cluster dense point layers; line and polygon layers keep their geometry. */
@@ -62,7 +55,6 @@ export async function loadVectorDataSource(
     });
     signal?.throwIfAborted();
     applyMarkerOverrides(dataSource, layer, resolveAsset);
-    if (layer.flags.large) trimEntities(dataSource, LARGE_LAYER_ENTITY_CAP);
     applyDensePointClustering(dataSource, layer);
     return dataSource;
   }
@@ -83,7 +75,6 @@ export async function loadVectorDataSource(
     });
     signal?.throwIfAborted();
     applyMarkerOverrides(dataSource, layer, resolveAsset);
-    if (layer.flags.large) trimEntities(dataSource, LARGE_LAYER_ENTITY_CAP);
     applyDensePointClustering(dataSource, layer);
     return dataSource;
   }

@@ -1,6 +1,17 @@
 import * as Cesium from 'cesium';
 import { describeLoadFailure } from '../imagery.js';
-import { loadVectorDataSource, readAnalystRecords } from '../vector.js';
+import {
+  loadVectorDataSource,
+  PROGRESSIVE_ENTITY_THRESHOLD,
+  readAnalystRecords,
+} from '../vector.js';
+
+const PROGRESSIVE_CHUNK = 500;
+
+const nextFrame = () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 /**
  * Shared lifecycle for KML and GeoJSON families. Downloads are generation-
@@ -12,6 +23,8 @@ export function createVectorFamily(
     resolveAsset = null,
     proxyUrl = null,
     loadVector = loadVectorDataSource,
+    progressiveThreshold = PROGRESSIVE_ENTITY_THRESHOLD,
+    progressiveChunk = PROGRESSIVE_CHUNK,
   } = {},
 ) {
   let viewer = null;
@@ -23,6 +36,8 @@ export function createVectorFamily(
   let error = null;
   let remedy = null;
   let count = 0;
+  let rendered = 0;
+  let progressive = false;
   let lastUpdate = null;
 
   async function attach(target) {
@@ -42,6 +57,16 @@ export function createVectorFamily(
         source.show = false;
         return false;
       }
+      const total = source.entities.values.length;
+      const useProgressive = total > progressiveThreshold;
+      let pending = null;
+      if (useProgressive) {
+        pending = [...source.entities.values];
+        source.entities.removeAll();
+        status = 'loading';
+        count = total;
+        rendered = 0;
+      }
       source.show = true;
       await viewer.dataSources.add(source);
       if (epoch !== generation || !enabled) {
@@ -49,7 +74,22 @@ export function createVectorFamily(
         return false;
       }
       dataSource = source;
-      count = source.entities.values.length;
+      if (useProgressive) {
+        progressive = true;
+        const step = Math.max(1, Math.floor(progressiveChunk));
+        for (let index = 0; index < pending.length; index += step) {
+          if (epoch !== generation || !enabled) return false;
+          for (const entity of pending.slice(index, index + step))
+            source.entities.add(entity);
+          rendered = source.entities.values.length;
+          lastUpdate = Date.now();
+          viewer.scene?.requestRender?.();
+          await nextFrame();
+        }
+        progressive = false;
+      }
+      count = total;
+      rendered = source.entities.values.length;
       lastUpdate = Date.now();
       status = count > 0 ? 'ok' : 'empty';
       error = null;
@@ -76,6 +116,8 @@ export function createVectorFamily(
       dataSource = null;
     }
     count = 0;
+    rendered = 0;
+    progressive = false;
     lastUpdate = null;
     status = 'idle';
     error = null;
@@ -110,6 +152,14 @@ export function createVectorFamily(
     refresh,
     zoomTo,
     records: (max) => (dataSource ? readAnalystRecords(dataSource, max) : []),
-    stats: () => ({ count, lastUpdate, error, remedy, status }),
+    stats: () => ({
+      count,
+      rendered,
+      progressive,
+      lastUpdate,
+      error,
+      remedy,
+      status,
+    }),
   };
 }

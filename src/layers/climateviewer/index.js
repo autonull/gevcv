@@ -9,7 +9,7 @@ import { isClimateViewerBasemapId } from './basemaps.js';
 export { createClimateViewerClock } from './clock.js';
 export {
   applyMarkerOverrides,
-  LARGE_LAYER_ENTITY_CAP,
+  PROGRESSIVE_ENTITY_THRESHOLD,
   loadVectorDataSource,
   readAnalystRecords,
 } from './vector.js';

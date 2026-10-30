@@ -1788,6 +1788,9 @@ export class LayerPanel {
         { source },
       );
     }
+    if (stats.progressive && typeof stats.rendered === 'number') {
+      return `${source} · ${stats.rendered}/${stats.count}`;
+    }
     const presentedError = translateFeedError(
       stats.error || stats.lastError || stats.managerRefreshError,
     );
