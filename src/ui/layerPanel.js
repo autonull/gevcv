@@ -268,10 +268,14 @@ export class LayerPanel {
     weatherClock,
     climateViewerClock,
     climateViewerHealth,
+    createClimateViewerLayers,
+    resolveAsset,
   }) {
     this.weatherClock = weatherClock;
     this.climateViewerClock = climateViewerClock;
     this.climateViewerHealth = climateViewerHealth;
+    this.createClimateViewerLayers = createClimateViewerLayers;
+    this._resolveAsset = resolveAsset;
     this.zoomToLayer = zoomToLayer;
     this.getCameraHeight = getCameraHeight;
     this.setSpotlightLayer = setSpotlightLayer;
@@ -379,11 +383,9 @@ export class LayerPanel {
           (PANEL_POSITIONS.get(b.id) ?? PANEL_ORDER.length),
       );
     let previousGroup = '';
-    const climateViewerLayers = [];
     for (const layer of layers) {
       if (!layer.showInTogglePanel) continue;
       if (layer.panelGroup === 'ClimateViewer') {
-        climateViewerLayers.push(layer);
         continue;
       }
       const group =
@@ -518,9 +520,791 @@ export class LayerPanel {
 
       this._toggleContainer.appendChild(row);
     }
-    if (climateViewerLayers.length)
-      this._renderClimateViewerRows(climateViewerLayers, generation);
+    const cvLayers = this.getAll().filter(l => l.panelGroup === 'ClimateViewer');
+    if (this.createClimateViewerLayers) {
+      this._renderClimateViewerRowsLazy(this.createClimateViewerLayers, generation);
+    } else if (cvLayers.length) {
+      this._renderClimateViewerRows(cvLayers, generation);
+    }
     this._refreshWeatherPanel();
+  }
+
+  /**
+   * Lazy path: ClimateViewer layers created on demand when panel opens.
+   * Virtualized list renders only visible window plus overscan.
+   */
+  _renderClimateViewerRowsLazy(createLayers, generation) {
+    this._stopClimateViewerClockPlay?.();
+    this._climateViewerClockUnsub?.();
+    this._climateViewerClockUnsub = null;
+    const details = document.createElement('details');
+    details.className = 'data-cv-section';
+    details.open = this._climateViewerOpen === true;
+    const summary = document.createElement('summary');
+    summary.className = 'data-layer-group-heading';
+    summary.textContent = t('ClimateViewer');
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'data-cv-body';
+    const toolbar = document.createElement('div');
+    toolbar.className = 'data-cv-toolbar';
+    const filter = document.createElement('input');
+    filter.type = 'search';
+    filter.value = this._climateViewerQuery ?? '';
+    filter.className = 'data-cv-filter';
+    filter.placeholder = msg('Filter ClimateViewer layers');
+    filter.setAttribute('aria-label', msg('Filter ClimateViewer layers'));
+    const count = document.createElement('span');
+    count.className = 'data-cv-count';
+    count.setAttribute('aria-live', 'polite');
+    const enabledCount = document.createElement('span');
+    enabledCount.className = 'data-cv-enabled';
+    enabledCount.setAttribute('aria-live', 'polite');
+    enabledCount.setAttribute('aria-label', t('Layers enabled'));
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'data-cv-clear';
+    clear.textContent = t('Clear');
+    const copyAtlas = document.createElement('button');
+    copyAtlas.type = 'button';
+    copyAtlas.className = 'data-cv-copy-atlas';
+    copyAtlas.textContent = msg('MD');
+    copyAtlas.setAttribute('aria-label', t('Copy atlas (Markdown)'));
+    copyAtlas.title = t('Copy atlas (Markdown)');
+    const snapshot = document.createElement('button');
+    snapshot.type = 'button';
+    snapshot.className = 'data-cv-snapshot';
+    snapshot.textContent = 'CARD'; // i18n-ignore: compact toolbar label
+    snapshot.setAttribute('aria-label', t('Snapshot card'));
+    snapshot.title = t('Snapshot card');
+    toolbar.append(filter, count, enabledCount, clear, copyAtlas, snapshot);
+
+    const packBar = document.createElement('div');
+    packBar.className = 'data-cv-packs';
+    const packButtons = new Map();
+    for (const pack of CLIMATEVIEWER_PACKS) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'data-cv-pack';
+      button.textContent = pack.name;
+      button.title = pack.description;
+      button.setAttribute('aria-pressed', 'false');
+      packButtons.set(pack.id, button);
+      this._bind(button, 'click', async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+          await this._applyClimateViewerPack(pack);
+        } finally {
+          button.disabled = false;
+          if (!this._destroyed && this._generation === generation) renderList();
+        }
+      });
+      packBar.appendChild(button);
+    }
+
+    const statusLine = document.createElement('div');
+    statusLine.className = 'data-cv-status';
+    statusLine.setAttribute('role', 'status');
+    statusLine.hidden = true;
+
+    const recents = document.createElement('div');
+    recents.className = 'data-cv-recents';
+    recents.hidden = true;
+
+    const healthBar = document.createElement('div');
+    healthBar.className = 'data-cv-health';
+    const clockBar = document.createElement('div');
+    clockBar.className = 'data-cv-clock';
+    clockBar.hidden = true;
+    const timelineBar = document.createElement('div');
+    timelineBar.className = 'data-cv-timeline';
+    timelineBar.hidden = true;
+    const timelineLabel = document.createElement('span');
+    timelineLabel.className = 'data-cv-timeline-label';
+    timelineLabel.textContent = t('Timeline');
+    const timelinePreview = document.createElement('span');
+    timelinePreview.className = 'data-cv-timeline-preview';
+    timelinePreview.setAttribute('aria-live', 'polite');
+    const timelineStrip = document.createElement('div');
+    timelineStrip.className = 'data-cv-timeline-strip';
+    timelineBar.append(timelineLabel, timelinePreview, timelineStrip);
+
+    const proxy = document.createElement('details');
+    proxy.className = 'data-cv-proxy';
+    const proxySummary = document.createElement('summary');
+    proxySummary.textContent = t('Proxy');
+    const proxyInput = document.createElement('input');
+    proxyInput.type = 'url';
+    proxyInput.className = 'data-cv-proxy-input';
+    proxyInput.placeholder = 'https://proxy.example/';
+    proxyInput.setAttribute('aria-label', t('Proxy URL'));
+    proxyInput.value =
+      readClimateViewerProxyUrl(globalThis.window?.localStorage) ?? '';
+    const proxySave = document.createElement('button');
+    proxySave.type = 'button';
+    proxySave.className = 'data-cv-proxy-save';
+    proxySave.textContent = t('Save');
+    const proxyClear = document.createElement('button');
+    proxyClear.type = 'button';
+    proxyClear.className = 'data-cv-proxy-clear';
+    proxyClear.textContent = t('Clear');
+    const proxyReload = document.createElement('button');
+    proxyReload.type = 'button';
+    proxyReload.className = 'data-cv-proxy-reload';
+    proxyReload.textContent = t('Reload');
+    const proxyStatus = document.createElement('span');
+    proxyStatus.className = 'data-cv-proxy-status';
+    proxyStatus.setAttribute('aria-live', 'polite');
+    const proxyActions = document.createElement('div');
+    proxyActions.className = 'data-cv-proxy-actions';
+    proxyActions.append(proxySave, proxyClear, proxyReload, proxyStatus);
+    proxy.append(proxySummary, proxyInput, proxyActions);
+
+    const legend = document.createElement('div');
+    legend.className = 'data-cv-legend';
+    legend.setAttribute('aria-hidden', 'true');
+    for (const badge of ['large', 'time', 'proxy', 'base', 'key', 'health']) {
+      const chip = document.createElement('span');
+      chip.className = `data-cv-badge data-cv-badge-${badge}`;
+      chip.textContent = {
+        large: 'L',
+        time: 'T',
+        proxy: 'P',
+        base: 'B',
+        key: 'K',
+        health: 'H',
+      }[badge];
+      legend.appendChild(chip);
+    }
+
+    const list = document.createElement('div');
+    list.className = 'data-cv-list';
+    list.style.position = 'relative';
+    body.append(
+      packBar,
+      toolbar,
+      statusLine,
+      recents,
+      healthBar,
+      clockBar,
+      timelineBar,
+      legend,
+      list,
+      proxy,
+    );
+    details.appendChild(body);
+    this._toggleContainer.appendChild(details);
+
+    // Lazy layer creation state
+    let layers = null;
+    let tree = null;
+    let collapsed = null;
+    let layerById = null;
+    let folderRows = [];
+    let initialized = false;
+    let rendered = false;
+
+    // Virtualization state
+    const ROW_HEIGHT = 44; // approximate row height in px
+    const OVERSCAN = 8;
+    let renderToken = 0;
+    let scheduled = null;
+    const cancel = () => {
+      renderToken += 1;
+      if (scheduled !== null) {
+        if (typeof cancelAnimationFrame === 'function')
+          cancelAnimationFrame(scheduled);
+        else clearTimeout(scheduled);
+        scheduled = null;
+      }
+    };
+    const schedule = (callback) => {
+      if (typeof requestAnimationFrame === 'function')
+        scheduled = requestAnimationFrame(callback);
+      else scheduled = setTimeout(callback, 0);
+    };
+
+    const initializeLayers = () => {
+      if (initialized) return;
+      initialized = true;
+      layers = createLayers({
+        clock: this.climateViewerClock,
+        resolveAsset: this._resolveAsset,
+        proxyUrl: readClimateViewerProxyUrl(globalThis.window?.localStorage),
+      });
+      layerById = new Map(layers.map((layer) => [layer.id, layer]));
+      tree = createClimateViewerTree(catalog.tree ?? [], layers);
+      this._climateViewerTree = tree;
+      collapsed =
+        this._climateViewerCollapsed ??
+        (this._climateViewerCollapsed = defaultCollapsedFolders(tree));
+      folderRows = [];
+      syncBulkState();
+      renderHealth();
+      renderClock();
+      updateDayLabels();
+      renderRecents();
+      renderList();
+    };
+
+    // Ensure layers are created when the details opens
+    const handleDetailsToggle = () => {
+      this._climateViewerOpen = details.open;
+      syncSheetState();
+      if (!details.open || rendered) return;
+      rendered = true;
+      if (!initialized) {
+        initializeLayers();
+      } else {
+        renderList();
+      }
+    };
+    this._bind(details, 'toggle', handleDetailsToggle);
+
+    const syncFolderStates = () => {
+      for (const entry of folderRows) {
+        entry.sync(
+          climateViewerFolderState(entry.node, (id) => this.isEnabled(id)),
+        );
+      }
+    };
+    this._climateViewerFolderSync = syncFolderStates;
+
+    const syncPackState = () => {
+      const active = activeClimateViewerPackId(
+        layers?.filter((layer) => this.isEnabled(layer.id)).map(({ id }) => id) ?? [],
+      );
+      for (const [id, button] of packButtons) {
+        const on = id === active;
+        button.classList.toggle('is-active', on);
+        button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+    };
+    this._climateViewerPackSync = syncPackState;
+
+    const syncBulkState = () => {
+      const enabled = layers?.filter((layer) => this.isEnabled(layer.id)).length ?? 0;
+      enabledCount.textContent = `${enabled} ${t('ON')}`;
+      clear.hidden = enabled === 0;
+      snapshot.disabled = enabled === 0;
+      syncPackState();
+    };
+    this._climateViewerBulkSync = syncBulkState;
+
+    const buildFolderRow = (entry, depth) => {
+      const folderRow = this._createClimateViewerFolderRow(entry.node, {
+        depth,
+        open: entry.open,
+        onToggleOpen: () => {
+          if (collapsed.has(entry.path)) collapsed.delete(entry.path);
+          else collapsed.add(entry.path);
+          renderList();
+        },
+        onToggleAll: async (enable) => {
+          const state = climateViewerFolderState(entry.node, (id) =>
+            this.isEnabled(id),
+          );
+          const operations = state.ids
+            .filter((id) => {
+              if (enable && !this._climateViewerBulkEligible(layerById.get(id)))
+                return false;
+              return this.isEnabled(id) !== enable;
+            })
+            .map((id) =>
+              this.setEnabled(id, enable, { origin: 'user' }).catch(
+                () => false,
+              ),
+            );
+          if (
+            operations.length > 50 &&
+            !this._confirmClimateViewerBulk(operations.length)
+          )
+            return;
+          await Promise.allSettled(operations);
+          renderList();
+        },
+      });
+      folderRows.push({ node: entry.node, sync: folderRow.sync });
+      folderRow.sync(
+        climateViewerFolderState(entry.node, (id) => this.isEnabled(id)),
+      );
+      return folderRow.row;
+    };
+
+    const matchesFor = (query) => {
+      if (!layers) return [];
+      const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+      if (!tokens.length) return layers;
+      return layers.filter((layer) => {
+        const haystack = [
+          layer.name,
+          layer.id,
+          layer.metadata?.cvId,
+          layer.metadata?.category,
+          layer.metadata?.sourceUrl,
+          layer.metadata?.description,
+          layer.family,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
+      });
+    };
+
+    const renderList = () => {
+      cancel();
+      this._climateViewerClockSync?.();
+      if (!layers) {
+        list.textContent = '';
+        const note = document.createElement('div');
+        note.className = 'data-cv-note';
+        note.textContent = t('Loading');
+        list.appendChild(note);
+        return;
+      }
+      const token = renderToken;
+      const query = filter.value.trim();
+      const searching = query.length > 0;
+      const healthFilter = this._climateViewerHealthFilter;
+      const flat = searching || Boolean(healthFilter);
+      const similar = this._climateViewerSimilar;
+      let matches =
+        similar && query === similar.query
+          ? layers.filter((layer) => similar.ids.has(layer.id))
+          : matchesFor(query);
+      if (healthFilter)
+        matches = matches.filter(
+          (layer) => this._climateViewerHealthStatus(layer) === healthFilter,
+        );
+      count.textContent = `${matches.length} / ${layers.length}`;
+      statusLine.textContent = this._climateViewerStatus ?? '';
+      statusLine.hidden = !this._climateViewerStatus;
+      syncBulkState();
+
+      // Build flat row array (folders + layers)
+      const rows = flat
+        ? matches.map((layer) => ({ kind: 'layer', layer }))
+        : flattenClimateViewerTree(tree, collapsed);
+
+      // Virtualization: compute visible range
+      const scrollTop = list.scrollTop;
+      const clientHeight = list.clientHeight || body.clientHeight || 400;
+      const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+      const endIndex = Math.min(
+        rows.length,
+        Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + OVERSCAN,
+      );
+
+      // Create spacer elements for unrendered rows
+      const totalHeight = rows.length * ROW_HEIGHT;
+      const beforeHeight = startIndex * ROW_HEIGHT;
+      const afterHeight = totalHeight - endIndex * ROW_HEIGHT;
+
+      list.textContent = '';
+      list.style.height = `${totalHeight}px`;
+
+      if (beforeHeight > 0) {
+        const spacer = document.createElement('div');
+        spacer.style.height = `${beforeHeight}px`;
+        spacer.className = 'data-cv-spacer';
+        spacer.dataset.spacer = 'before';
+        list.appendChild(spacer);
+      }
+
+      this._climateViewerDayNodes = [];
+      let previousCategory = '';
+      for (let i = startIndex; i < endIndex; i += 1) {
+        const entry = rows[i];
+        if (entry.kind === 'folder') {
+          const row = buildFolderRow(entry, entry.depth);
+          row.style.setProperty('--cv-depth', String(entry.depth));
+          row.dataset.cvIndex = String(i);
+          list.appendChild(row);
+          continue;
+        }
+        if (flat) {
+          const category = entry.layer.metadata?.category ?? '';
+          if (category !== previousCategory) {
+            const heading = document.createElement('div');
+            heading.className = 'data-cv-category';
+            heading.textContent = category;
+            heading.dataset.cvIndex = String(i);
+            list.appendChild(heading);
+            previousCategory = category;
+          }
+        }
+        const layerRow = this._createClimateViewerRow(
+          entry.layer,
+          generation,
+        );
+        layerRow.style?.setProperty?.('--cv-depth', String(entry.depth ?? 0));
+        layerRow.dataset.cvIndex = String(i);
+        list.appendChild(layerRow);
+      }
+
+      if (afterHeight > 0) {
+        const spacer = document.createElement('div');
+        spacer.style.height = `${afterHeight}px`;
+        spacer.className = 'data-cv-spacer';
+        spacer.dataset.spacer = 'after';
+        list.appendChild(spacer);
+      }
+
+      scheduled = null;
+      applyDeepLinkFocus();
+    };
+
+    const applyDeepLinkFocus = () => {
+      const id = this._climateViewerDeepLinkId;
+      if (!id) return;
+      const row = Array.from(list.querySelectorAll('[data-layer-id]')).find(
+        (child) => child.dataset.layerId === id,
+      );
+      if (!row) return;
+      row.scrollIntoView?.({ block: 'center' });
+      const info = row.querySelector?.('.data-cv-info');
+      info?.focus?.();
+      const drawer = row.querySelector?.('.data-cv-drawer');
+      if (info && drawer?.hidden) info.click();
+    };
+
+    // Scroll listener for virtualization
+    list.addEventListener('scroll', () => {
+      if (initialized) {
+        cancel();
+        schedule(renderList);
+      }
+    });
+
+    const healthOrder = [
+      'ok',
+      'redirect',
+      'cors',
+      'dead',
+      'key-required',
+      'assets-missing',
+      'untested',
+    ];
+    const renderHealth = () => {
+      if (!layers) return;
+      const counts = Object.fromEntries(
+        healthOrder.map((status) => [status, 0]),
+      );
+      for (const layer of layers) {
+        const status = this._climateViewerHealthStatus(layer);
+        if (status in counts) counts[status] += 1;
+        else counts.untested += 1;
+      }
+      healthBar.textContent = '';
+      const audit = this.climateViewerHealth
+        ? auditClimateViewerHealth(catalog, this.climateViewerHealth)
+        : null;
+      if (audit?.checkedAt) {
+        healthBar.title = t('Health checked {date}', {
+          date: String(audit.checkedAt).slice(0, 10),
+        });
+      }
+      if (audit && !audit.ok) {
+        const stale = document.createElement('span');
+        stale.className = 'data-cv-health-stale';
+        stale.textContent = t('Health stale');
+        healthBar.appendChild(stale);
+      }
+      for (const status of healthOrder) {
+        if (!counts[status]) continue;
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'data-cv-health-chip';
+        chip.dataset.health = status;
+        chip.classList.toggle(
+          'active',
+          this._climateViewerHealthFilter === status,
+        );
+        chip.setAttribute(
+          'aria-pressed',
+          this._climateViewerHealthFilter === status ? 'true' : 'false',
+        );
+        chip.textContent = `${status} ${counts[status]}`;
+        this._bind(chip, 'click', () => {
+          this._climateViewerHealthFilter =
+            this._climateViewerHealthFilter === status ? null : status;
+          renderHealth();
+          renderList();
+        });
+        healthBar.appendChild(chip);
+      }
+    };
+
+    const clock = this.climateViewerClock;
+    const clockDate = document.createElement('input');
+    clockDate.type = 'date';
+    clockDate.className = 'data-cv-date';
+    clockDate.setAttribute('aria-label', t('Date'));
+    const previousDay = document.createElement('button');
+    previousDay.type = 'button';
+    previousDay.className = 'data-cv-day-prev';
+    previousDay.textContent = '‹';
+    previousDay.setAttribute('aria-label', t('Previous day'));
+    const nextDay = document.createElement('button');
+    nextDay.type = 'button';
+    nextDay.className = 'data-cv-day-next';
+    nextDay.textContent = '›';
+    nextDay.setAttribute('aria-label', t('Next day'));
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'data-cv-day-play';
+    const today = document.createElement('button');
+    today.type = 'button';
+    today.className = 'data-cv-day-today';
+    today.textContent = t('Today');
+    clockBar.append(previousDay, clockDate, nextDay, play, today);
+
+    let clockTimer = null;
+    const stopPlay = () => {
+      if (clockTimer) clearInterval(clockTimer);
+      clockTimer = null;
+      this._climateViewerClockPlaying = false;
+    };
+    this._stopClimateViewerClockPlay = stopPlay;
+    const updateDayLabels = () => {
+      if (!clock) return;
+      const day = clock.isoDate();
+      for (const node of this._climateViewerDayNodes ?? [])
+        node.textContent = day;
+    };
+    const timelineDays = new Map();
+    let timelineBuilt = false;
+    const buildTimeline = () => {
+      if (!clock || timelineBuilt) return;
+      timelineBuilt = true;
+      const end = new Date(`${clock.today()}T00:00:00Z`);
+      for (let offset = 29; offset >= 0; offset -= 1) {
+        const date = new Date(end.getTime());
+        date.setUTCDate(end.getUTCDate() - offset);
+        const iso = date.toISOString().slice(0, 10);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'data-cv-timeline-day';
+        button.dataset.day = iso;
+        button.setAttribute('aria-label', iso);
+        this._bind(button, 'mouseenter', () => {
+          timelinePreview.textContent = iso;
+        });
+        this._bind(button, 'focus', () => {
+          timelinePreview.textContent = iso;
+        });
+        this._bind(button, 'mouseleave', () => {
+          timelinePreview.textContent = clock.isoDate();
+        });
+        this._bind(button, 'blur', () => {
+          timelinePreview.textContent = clock.isoDate();
+        });
+        this._bind(button, 'click', () => clock.setDate(iso));
+        timelineDays.set(iso, button);
+        timelineStrip.appendChild(button);
+      }
+    };
+    const updateTimeline = () => {
+      const anyTimeline = layers?.some(
+        (layer) => layer.metadata?.flags?.timeline && this.isEnabled(layer.id),
+      );
+      timelineBar.hidden = !clock || !anyTimeline;
+      if (timelineBar.hidden) return;
+      buildTimeline();
+      const day = clock.isoDate();
+      for (const [iso, button] of timelineDays)
+        button.classList.toggle('active', iso === day);
+      timelinePreview.textContent = day;
+    };
+    const renderClock = () => {
+      const anyEnabled = layers?.some(
+        (layer) =>
+          this._climateViewerTimeEnabled(layer) && this.isEnabled(layer.id),
+      );
+      clockBar.hidden = !clock || !anyEnabled;
+      if (clockBar.hidden) {
+        timelineBar.hidden = true;
+        stopPlay();
+        return;
+      }
+      clockDate.value = clock.isoDate();
+      play.textContent = t(this._climateViewerClockPlaying ? 'Pause' : 'Play');
+      play.setAttribute(
+        'aria-pressed',
+        this._climateViewerClockPlaying ? 'true' : 'false',
+      );
+      updateTimeline();
+    };
+    this._climateViewerClockSync = renderClock;
+    this._bind(proxySave, 'click', () => {
+      const normalized = writeClimateViewerProxyUrl(
+        proxyInput.value,
+        globalThis.window?.localStorage,
+      );
+      if (proxyInput.value.trim() && !normalized) {
+        proxyStatus.textContent = t('Invalid proxy URL');
+        return;
+      }
+      proxyInput.value = normalized ?? '';
+      proxyStatus.textContent = t('Reload to apply');
+    });
+    this._bind(proxyClear, 'click', () => {
+      writeClimateViewerProxyUrl('', globalThis.window?.localStorage);
+      proxyInput.value = '';
+      proxyStatus.textContent = t('Reload to apply');
+    });
+    this._bind(proxyReload, 'click', () => {
+      globalThis.location?.reload?.();
+    });
+    this._bind(previousDay, 'click', () => clock?.step(-1));
+    this._bind(nextDay, 'click', () => clock?.step(1));
+    this._bind(today, 'click', () => clock?.setDate(new Date()));
+    this._bind(clockDate, 'change', () => {
+      if (clockDate.value) clock?.setDate(clockDate.value);
+    });
+    const togglePlay = () => {
+      if (!clock) return;
+      this._climateViewerClockPlaying = !this._climateViewerClockPlaying;
+      if (this._climateViewerClockPlaying) {
+        clockTimer = setInterval(() => clock.step(1), 500);
+      } else {
+        stopPlay();
+      }
+      renderClock();
+    };
+    this._climateViewerPlayToggle = togglePlay;
+    this._bind(play, 'click', togglePlay);
+    if (clock) {
+      this._climateViewerClockUnsub = clock.subscribe(() => {
+        renderClock();
+        updateDayLabels();
+      });
+    }
+    renderHealth();
+    renderClock();
+    updateDayLabels();
+
+    const renderRecents = () => {
+      recents.textContent = '';
+      const recent = this._recentClimateViewerSearches();
+      recents.hidden = recent.length === 0;
+      for (const query of recent) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'data-cv-recent';
+        chip.textContent = query;
+        chip.setAttribute('aria-label', query);
+        this._bind(chip, 'click', () => {
+          filter.value = query;
+          this._climateViewerQuery = query;
+          this._climateViewerSimilar = null;
+          this._climateViewerDeepLinkId = null;
+          this._climateViewerStatus = null;
+          filter.focus?.();
+          renderList();
+        });
+        recents.appendChild(chip);
+      }
+    };
+    this._bind(filter, 'input', () => {
+      this._climateViewerQuery = filter.value;
+      this._climateViewerSimilar = null;
+      this._climateViewerDeepLinkId = null;
+      this._climateViewerStatus = null;
+      if (initialized) renderList();
+    });
+    this._bind(filter, 'keydown', (event) => {
+      if (event.key === 'Enter' && filter.value.trim()) {
+        event.preventDefault();
+        this._rememberClimateViewerSearch(filter.value);
+        this._climateViewerQuery = filter.value;
+        this._climateViewerSimilar = null;
+        renderRecents();
+        const row = list.querySelector('.data-cv-row');
+        const info = row?.querySelector?.('.data-cv-info');
+        if (info) info.click();
+        else row?.scrollIntoView?.({ block: 'center' });
+        return;
+      }
+      if (event.key !== 'ArrowDown') return;
+      const first = list.querySelector('.data-toggle-btn');
+      if (first) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    this._bind(clear, 'click', async () => {
+      if (this._clearingClimateViewer) return;
+      this._clearingClimateViewer = true;
+      clear.disabled = true;
+      try {
+        const enabled = layers?.filter((layer) =>
+          this.isEnabled(layer.id),
+        ).length ?? 0;
+        if (enabled > 50 && !this._confirmClimateViewerBulk(enabled)) return;
+        for (const layer of layers ?? []) {
+          if (this.isEnabled(layer.id))
+            await this.setEnabled(layer.id, false, { origin: 'user' });
+        }
+      } finally {
+        this._clearingClimateViewer = false;
+        clear.disabled = false;
+        if (!this._destroyed && this._generation === generation) renderList();
+      }
+    });
+    this._bind(copyAtlas, 'click', async () => {
+      const ok = await copyText(
+        climateViewerMarkdownTable(layers ?? []),
+        details.ownerDocument,
+      );
+      copyAtlas.textContent = ok ? t('Copied') : t('Copy failed');
+      setTimeout(() => {
+        if (copyAtlas.isConnected) copyAtlas.textContent = msg('MD');
+      }, 1500);
+    });
+    this._bind(snapshot, 'click', () => {
+      const enabled = layers?.filter((layer) => this.isEnabled(layer.id)) ?? [];
+      if (!enabled.length) return;
+      this._climateViewerSnapshotOverlay?.remove();
+      this._climateViewerSnapshotOverlay = openClimateViewerSnapshot(
+        buildClimateViewerSnapshotModel(enabled),
+        { documentRef: details.ownerDocument },
+      ).overlay;
+    });
+    renderRecents();
+    const syncSheetState = () => {
+      const body = details.ownerDocument?.body;
+      if (!body?.classList) return;
+      this._climateViewerSheetBody = body;
+      body.classList.toggle('climateviewer-sheet-open', details.open);
+    };
+    syncSheetState();
+    this._climateViewerControls = {
+      details,
+      filter,
+      list,
+      renderList,
+      syncSheetState,
+    };
+    const ownerDocument = details.ownerDocument;
+    if (typeof ownerDocument?.addEventListener === 'function') {
+      this._bind(ownerDocument, 'keydown', (event) => {
+        if (event.key !== '/' || !details.open || !details.isConnected) return;
+        const target = event.target;
+        const tag = target?.tagName?.toLowerCase?.() ?? '';
+        if (
+          ['input', 'textarea', 'select'].includes(tag) ||
+          target?.isContentEditable
+        )
+          return;
+        event.preventDefault();
+        filter.focus();
+        filter.select?.();
+      });
+    }
   }
 
   /**

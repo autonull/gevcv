@@ -2895,5 +2895,6 @@
   "Health stale": "ヘルスデータが古い",
   "Health checked {date}": "ヘルスチェック日: {date}",
   "Animate": "アニメーション",
-  "Stop": "停止"
+  "Stop": "停止",
+  "ClimateViewer": "ClimateViewer"
 }

@@ -68,6 +68,51 @@ export const APPLICATION_LAYER_METADATA = Object.freeze([
   ...LOCAL_ONLY_LAYER_METADATA,
 ]);
 
+/** Create minimal placeholder layers for ClimateViewer to satisfy catalog validation. */
+function createClimateViewerPlaceholders() {
+  return CLIMATEVIEWER_LAYERS.map((def) => ({
+    id: def.id,
+    name: def.name,
+    icon: '🗺️',
+    source: 'ClimateViewer',
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    category: def.category.join(' › '),
+    family: def.family,
+    role: def.role,
+    keyRequired: def.family === 'bing',
+    metadata: {
+      cvId: def.cvId,
+      description: def.description,
+      sourceUrl: def.sourceUrl,
+      category: def.category.join(' › '),
+      sublayers: def.sublayers,
+      flags: def.flags,
+      family: def.family,
+      role: def.role,
+      providerUrl: def.url,
+      traits: def.traits,
+      health: def.health,
+    },
+    init() {},
+    enable() { return true; },
+    disable() {},
+    update() { return false; },
+    destroy() {},
+    attachMapStackController() {},
+    attachDataManager() {},
+    getAnalystRecords() { return []; },
+    zoomTo() { return false; },
+    getStats() {
+      return {
+        count: 0,
+        status: 'idle',
+        available: true,
+      };
+    },
+  }));
+}
+
 /** Construct the current catalog without choosing any source provider.
  * Scene engines remain page-owned; layers and classification have this app's lifetime.
  * The manager owns layer destruction, while abort releases classification even if startup fails.
@@ -190,11 +235,9 @@ export function createApplicationCatalog({
         }),
         createCyclonesLayer({ feed: sources.cyclones }),
         ...createInfrastructureLayers(localGeoJsonServices),
-        ...createClimateViewerLayers({
-          clock: climateViewerClock,
-          resolveAsset,
-          proxyUrl: readClimateViewerProxyUrl(),
-        }),
+        // ClimateViewer placeholder layers: minimal objects to satisfy catalog
+        // metadata validation. Real layers are created lazily when the panel opens.
+        ...createClimateViewerPlaceholders(),
         createApplicationCables({ source: sources.cables }),
         createApplicationFirms({
           surface,
@@ -217,6 +260,13 @@ export function createApplicationCatalog({
       weatherClock,
       climateViewerClock,
       climateViewerHealth: CLIMATEVIEWER_HEALTH,
+      createClimateViewerLayers: (options = {}) =>
+        createClimateViewerLayers({
+          clock: climateViewerClock,
+          resolveAsset,
+          proxyUrl: readClimateViewerProxyUrl(),
+          ...options,
+        }),
     });
   } catch (error) {
     dispose();

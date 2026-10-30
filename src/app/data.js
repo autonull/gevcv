@@ -30,6 +30,8 @@ export function createApplicationData({
     weatherClock: catalog?.weatherClock,
     climateViewerClock: catalog?.climateViewerClock,
     climateViewerHealth: catalog?.climateViewerHealth,
+    createClimateViewerLayers: catalog?.createClimateViewerLayers,
+    resolveAsset: catalog?.resolveAsset,
     getCameraHeight: () => {
       try {
         return viewer.camera.positionCartographic.height;

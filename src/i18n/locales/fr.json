@@ -3035,5 +3035,6 @@
   "Health stale": "Données de santé obsolètes",
   "Health checked {date}": "Santé vérifiée le {date}",
   "Animate": "Animer",
-  "Stop": "Arrêter"
+  "Stop": "Arrêter",
+  "ClimateViewer": "ClimateViewer"
 }

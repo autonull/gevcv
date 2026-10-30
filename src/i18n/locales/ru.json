@@ -3105,5 +3105,6 @@
   "Health stale": "Данные о состоянии устарели",
   "Health checked {date}": "Состояние проверено {date}",
   "Animate": "Анимировать",
-  "Stop": "Остановить"
+  "Stop": "Остановить",
+  "ClimateViewer": "ClimateViewer"
 }

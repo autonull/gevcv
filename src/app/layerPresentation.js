@@ -10,6 +10,8 @@ export class LayerPresentation {
       weatherClock,
       climateViewerClock,
       climateViewerHealth,
+      createClimateViewerLayers,
+      resolveAsset,
       getCameraHeight = () => null,
       requestRender = governorRequestRender,
       invalidateDetection = markDetectionSourcesChanged,
@@ -19,6 +21,8 @@ export class LayerPresentation {
     this.weatherClock = weatherClock;
     this.climateViewerClock = climateViewerClock;
     this.climateViewerHealth = climateViewerHealth;
+    this.createClimateViewerLayers = createClimateViewerLayers;
+    this.resolveAsset = resolveAsset;
     this.getCameraHeight = getCameraHeight;
     this._panel = null;
     this.pendingVisible = false;
@@ -46,6 +50,8 @@ export class LayerPresentation {
         weatherClock: this.weatherClock,
         climateViewerClock: this.climateViewerClock,
         climateViewerHealth: this.climateViewerHealth,
+        createClimateViewerLayers: this.createClimateViewerLayers,
+        resolveAsset: this.resolveAsset,
         retryLayer: async (id) => {
           await this.manager.setEnabled(id, false, { origin: 'user' });
           return this.manager.setEnabled(id, true, { origin: 'user' });
