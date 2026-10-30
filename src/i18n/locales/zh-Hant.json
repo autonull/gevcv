@@ -2876,5 +2876,11 @@
   "Next day": "後一天",
   "Today": "今天",
   "Retry now": "立即重試",
-  "Timeline": "時間軸"
+  "Timeline": "時間軸",
+  "Proxy": "代理",
+  "Proxy URL": "代理 URL",
+  "Save": "儲存",
+  "Reload": "重新載入",
+  "Reload to apply": "重新載入以套用",
+  "Invalid proxy URL": "代理 URL 無效"
 }

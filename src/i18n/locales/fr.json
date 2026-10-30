@@ -3016,5 +3016,11 @@
   "Next day": "Jour suivant",
   "Today": "Aujourd'hui",
   "Retry now": "Réessayer",
-  "Timeline": "Chronologie"
+  "Timeline": "Chronologie",
+  "Proxy": "Serveur proxy",
+  "Proxy URL": "URL du proxy",
+  "Save": "Enregistrer",
+  "Reload": "Recharger",
+  "Reload to apply": "Recharger pour appliquer",
+  "Invalid proxy URL": "URL de proxy invalide"
 }

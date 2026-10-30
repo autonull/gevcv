@@ -2946,5 +2946,11 @@
   "Next day": "Nächster Tag",
   "Today": "Heute",
   "Retry now": "Jetzt wiederholen",
-  "Timeline": "Zeitleiste"
+  "Timeline": "Zeitleiste",
+  "Proxy": "Proxy-Server",
+  "Proxy URL": "Proxy-URL",
+  "Save": "Speichern",
+  "Reload": "Neu laden",
+  "Reload to apply": "Neu laden, um anzuwenden",
+  "Invalid proxy URL": "Ungültige Proxy-URL"
 }

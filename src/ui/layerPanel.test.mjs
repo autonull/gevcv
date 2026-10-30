@@ -846,6 +846,78 @@ test('ClimateViewer clock surface follows the shared day and labels time rows', 
   }
 });
 
+test('ClimateViewer proxy preference validates, saves, and clears', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const { CLIMATEVIEWER_PROXY_STORAGE_KEY } =
+    await import('../layers/climateviewer/settings.js');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  const previousWindow = globalThis.window;
+  globalThis.document = f.document;
+  const values = new Map();
+  globalThis.window = {
+    localStorage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    },
+  };
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    const input = byClass('data-cv-proxy-input');
+    byClass('data-cv-proxy-save').click();
+    input.value = 'https://proxy.example/';
+    byClass('data-cv-proxy-save').click();
+    assert.equal(
+      values.get(CLIMATEVIEWER_PROXY_STORAGE_KEY),
+      'https://proxy.example',
+    );
+    assert.equal(
+      byClass('data-cv-proxy-status').textContent,
+      'Reload to apply',
+    );
+    input.value = 'ftp://bad.example/';
+    byClass('data-cv-proxy-save').click();
+    assert.equal(
+      byClass('data-cv-proxy-status').textContent,
+      'Invalid proxy URL',
+    );
+    byClass('data-cv-proxy-clear').click();
+    assert.equal(values.has(CLIMATEVIEWER_PROXY_STORAGE_KEY), false);
+  } finally {
+    panel.destroy();
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

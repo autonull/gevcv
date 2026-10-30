@@ -14,6 +14,10 @@ import { createWeatherPanel } from './weatherPanel.js';
 import { CLIMATEVIEWER_PACKS } from '../layers/climateviewer/packs.js';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 import {
+  readClimateViewerProxyUrl,
+  writeClimateViewerProxyUrl,
+} from '../layers/climateviewer/settings.js';
+import {
   climateViewerFolderForLayer,
   climateViewerFolderLayerIds,
   climateViewerFolderState,
@@ -587,6 +591,37 @@ export class LayerPanel {
     timelineStrip.className = 'data-cv-timeline-strip';
     timelineBar.append(timelineLabel, timelinePreview, timelineStrip);
 
+    const proxy = document.createElement('details');
+    proxy.className = 'data-cv-proxy';
+    const proxySummary = document.createElement('summary');
+    proxySummary.textContent = t('Proxy');
+    const proxyInput = document.createElement('input');
+    proxyInput.type = 'url';
+    proxyInput.className = 'data-cv-proxy-input';
+    proxyInput.placeholder = 'https://proxy.example/';
+    proxyInput.setAttribute('aria-label', t('Proxy URL'));
+    proxyInput.value =
+      readClimateViewerProxyUrl(globalThis.window?.localStorage) ?? '';
+    const proxySave = document.createElement('button');
+    proxySave.type = 'button';
+    proxySave.className = 'data-cv-proxy-save';
+    proxySave.textContent = t('Save');
+    const proxyClear = document.createElement('button');
+    proxyClear.type = 'button';
+    proxyClear.className = 'data-cv-proxy-clear';
+    proxyClear.textContent = t('Clear');
+    const proxyReload = document.createElement('button');
+    proxyReload.type = 'button';
+    proxyReload.className = 'data-cv-proxy-reload';
+    proxyReload.textContent = t('Reload');
+    const proxyStatus = document.createElement('span');
+    proxyStatus.className = 'data-cv-proxy-status';
+    proxyStatus.setAttribute('aria-live', 'polite');
+    const proxyActions = document.createElement('div');
+    proxyActions.className = 'data-cv-proxy-actions';
+    proxyActions.append(proxySave, proxyClear, proxyReload, proxyStatus);
+    proxy.append(proxySummary, proxyInput, proxyActions);
+
     const legend = document.createElement('div');
     legend.className = 'data-cv-legend';
     legend.setAttribute('aria-hidden', 'true');
@@ -615,6 +650,7 @@ export class LayerPanel {
       timelineBar,
       legend,
       list,
+      proxy,
     );
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
@@ -925,6 +961,26 @@ export class LayerPanel {
       updateTimeline();
     };
     this._climateViewerClockSync = renderClock;
+    this._bind(proxySave, 'click', () => {
+      const normalized = writeClimateViewerProxyUrl(
+        proxyInput.value,
+        globalThis.window?.localStorage,
+      );
+      if (proxyInput.value.trim() && !normalized) {
+        proxyStatus.textContent = t('Invalid proxy URL');
+        return;
+      }
+      proxyInput.value = normalized ?? '';
+      proxyStatus.textContent = t('Reload to apply');
+    });
+    this._bind(proxyClear, 'click', () => {
+      writeClimateViewerProxyUrl('', globalThis.window?.localStorage);
+      proxyInput.value = '';
+      proxyStatus.textContent = t('Reload to apply');
+    });
+    this._bind(proxyReload, 'click', () => {
+      globalThis.location?.reload?.();
+    });
     this._bind(previousDay, 'click', () => clock?.step(-1));
     this._bind(nextDay, 'click', () => clock?.step(1));
     this._bind(today, 'click', () => clock?.setDate(new Date()));

@@ -2876,5 +2876,11 @@
   "Next day": "次の日",
   "Today": "今日",
   "Retry now": "今すぐ再試行",
-  "Timeline": "タイムライン"
+  "Timeline": "タイムライン",
+  "Proxy": "プロキシ",
+  "Proxy URL": "プロキシ URL",
+  "Save": "保存",
+  "Reload": "再読み込み",
+  "Reload to apply": "適用するには再読み込み",
+  "Invalid proxy URL": "プロキシ URL が無効です"
 }

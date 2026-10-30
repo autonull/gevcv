@@ -224,6 +224,51 @@
   background: #8fc8ff;
 }
 
+.data-cv-proxy {
+  padding: 4px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+  font-size: 9px;
+}
+
+.data-cv-proxy summary {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.data-cv-proxy-input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 5px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 3px;
+  background: rgb(0 0 0 / 20%);
+  color: inherit;
+  font: inherit;
+}
+
+.data-cv-proxy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.data-cv-proxy-actions button {
+  padding: 2px 5px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.data-cv-proxy-status {
+  opacity: 0.75;
+}
+
 .data-cv-folder-row {
   display: flex;
   align-items: center;
