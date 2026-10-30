@@ -545,6 +545,65 @@ test('ClimateViewer drawer copies source, zooms, and filters similar layers', as
   }
 });
 
+test('ClimateViewer shows an empty state and tracks its full-screen sheet class', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    assert.equal(
+      f.document.body.classList.contains('climateviewer-sheet-open'),
+      true,
+    );
+    const details = byClass('data-cv-section');
+    const filter = byClass('data-cv-filter');
+    filter.value = 'no-such-layer-zzz';
+    filter.dispatchEvent(new Event('input'));
+    assert.equal(byClass('data-cv-note').textContent, 'No layers match');
+
+    details.open = false;
+    details.dispatchEvent(new Event('toggle'));
+    assert.equal(
+      f.document.body.classList.contains('climateviewer-sheet-open'),
+      false,
+    );
+  } finally {
+    panel.destroy();
+    assert.equal(
+      f.document.body.classList.contains('climateviewer-sheet-open'),
+      false,
+    );
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

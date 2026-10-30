@@ -2937,5 +2937,6 @@
   "MD": "MD",
   "Copy source": "Quelle kopieren",
   "Zoom to layer": "Auf Layer zoomen",
-  "Similar layers": "Ähnliche Layer"
+  "Similar layers": "Ähnliche Layer",
+  "No layers match": "Keine Layer passen"
 }

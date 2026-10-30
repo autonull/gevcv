@@ -318,4 +318,68 @@
     min-width: 28px;
     min-height: 28px;
   }
+
+  body.climateviewer-sheet-open .data-cv-section[open] {
+    position: fixed;
+    inset: 0;
+    z-index: 220;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: max(8px, env(safe-area-inset-top)) 10px
+      max(8px, env(safe-area-inset-bottom));
+    overflow: hidden;
+    background: #0a1119;
+  }
+
+  body.climateviewer-sheet-open .data-cv-section > summary {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    background: #0a1119;
+  }
+
+  body.climateviewer-sheet-open .data-cv-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  body.climateviewer-sheet-open .data-cv-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 6px 0;
+    background: #0a1119;
+  }
+
+  body.climateviewer-sheet-open .data-cv-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.climateviewer-sheet-open .data-cv-filter,
+  body.climateviewer-sheet-open .data-cv-clear,
+  body.climateviewer-sheet-open .data-cv-copy-atlas,
+  body.climateviewer-sheet-open .data-cv-pack,
+  body.climateviewer-sheet-open .data-cv-recent,
+  body.climateviewer-sheet-open .data-cv-folder-row,
+  body.climateviewer-sheet-open .data-cv-drawer-actions button {
+    min-height: 44px;
+  }
+
+  body.climateviewer-sheet-open .data-cv-folder-toggle,
+  body.climateviewer-sheet-open .data-cv-info,
+  body.climateviewer-sheet-open .data-toggle-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

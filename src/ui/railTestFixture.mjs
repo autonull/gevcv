@@ -124,6 +124,7 @@ export function railFixture(onWrite = () => {}) {
       return tracked(node);
     },
   };
+  document.body = document.createElement('body');
   const container = document.createElement('div');
   const find = (root, predicate, includeRoot = true, seen = new Set()) => {
     if (seen.has(root)) return null;

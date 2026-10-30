@@ -2867,5 +2867,6 @@
   "MD": "MD",
   "Copy source": "複製來源",
   "Zoom to layer": "縮放至圖層",
-  "Similar layers": "類似圖層"
+  "Similar layers": "類似圖層",
+  "No layers match": "沒有符合的圖層"
 }

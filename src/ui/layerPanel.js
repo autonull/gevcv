@@ -322,6 +322,11 @@ export class LayerPanel {
     this._recentImageryPanel = null;
     this._recentImageryFactory = null;
     this._toggleContainer = null;
+    this._climateViewerSheetBody?.classList?.toggle(
+      'climateviewer-sheet-open',
+      false,
+    );
+    this._climateViewerSheetBody = null;
   }
   _renderToggles() {
     if (this._destroyed || !this._toggleContainer) return;
@@ -662,7 +667,13 @@ export class LayerPanel {
       clear.hidden = enabled === 0;
       list.textContent = '';
       folderRows.length = 0;
-      if (!matches.length) return;
+      if (!matches.length) {
+        const note = document.createElement('div');
+        note.className = 'data-cv-note';
+        note.textContent = layers.length ? t('No layers match') : t('Loading');
+        list.appendChild(note);
+        return;
+      }
       const rows = searching
         ? matches.map((layer) => ({ kind: 'layer', layer }))
         : flattenClimateViewerTree(tree, collapsed);
@@ -701,8 +712,15 @@ export class LayerPanel {
     };
 
     let rendered = false;
+    const syncSheetState = () => {
+      const body = details.ownerDocument?.body;
+      if (!body?.classList) return;
+      this._climateViewerSheetBody = body;
+      body.classList.toggle('climateviewer-sheet-open', details.open);
+    };
     const onToggle = () => {
       this._climateViewerOpen = details.open;
+      syncSheetState();
       if (!details.open || rendered) return;
       rendered = true;
       renderList();
@@ -779,6 +797,7 @@ export class LayerPanel {
       }, 1500);
     });
     renderRecents();
+    syncSheetState();
     this._climateViewerControls = { details, filter, list, renderList };
     const ownerDocument = details.ownerDocument;
     if (typeof ownerDocument?.addEventListener === 'function') {

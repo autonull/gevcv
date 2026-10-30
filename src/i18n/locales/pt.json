@@ -3007,5 +3007,6 @@
   "MD": "MD",
   "Copy source": "Copiar fonte",
   "Zoom to layer": "Aproximar na camada",
-  "Similar layers": "Camadas semelhantes"
+  "Similar layers": "Camadas semelhantes",
+  "No layers match": "Nenhuma camada corresponde"
 }

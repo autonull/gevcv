@@ -3077,5 +3077,6 @@
   "MD": "MD",
   "Copy source": "Копировать источник",
   "Zoom to layer": "Приблизить к слою",
-  "Similar layers": "Похожие слои"
+  "Similar layers": "Похожие слои",
+  "No layers match": "Нет подходящих слоёв"
 }

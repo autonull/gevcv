@@ -2867,5 +2867,6 @@
   "MD": "MD",
   "Copy source": "ソースをコピー",
   "Zoom to layer": "レイヤーにズーム",
-  "Similar layers": "類似レイヤー"
+  "Similar layers": "類似レイヤー",
+  "No layers match": "一致するレイヤーなし"
 }

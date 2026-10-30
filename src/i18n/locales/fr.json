@@ -3007,5 +3007,6 @@
   "MD": "MD",
   "Copy source": "Copier la source",
   "Zoom to layer": "Zoomer sur la couche",
-  "Similar layers": "Couches similaires"
+  "Similar layers": "Couches similaires",
+  "No layers match": "Aucune couche ne correspond"
 }

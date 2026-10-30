@@ -3007,5 +3007,6 @@
   "MD": "MD",
   "Copy source": "Copiar fuente",
   "Zoom to layer": "Acercar a la capa",
-  "Similar layers": "Capas similares"
+  "Similar layers": "Capas similares",
+  "No layers match": "Ninguna capa coincide"
 }
