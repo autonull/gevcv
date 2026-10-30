@@ -45,7 +45,7 @@ test('catalogs construct distinct layers and classification from their supplied 
     id.startsWith('cv-'),
   ).length;
   assert.ok(climateViewerCount > 0, 'ClimateViewer layers are registered');
-  assert.equal(first.layers.length, 32 + climateViewerCount);
+  assert.equal(first.layers.length, 33 + climateViewerCount);
   assert.ok(first.get('local-adsb'), 'Local ADS-B is registered');
   assert.deepEqual(
     first.metadata.find(({ id }) => id === 'local-adsb'),
@@ -66,6 +66,7 @@ test('catalogs construct distinct layers and classification from their supplied 
     );
   assert.ok(first.get('fire-perimeters'));
   assert.ok(first.get('gnss-integrity'));
+  assert.ok(first.get('s2-ghostmaps'));
   assert.ok(first.get('transit'));
   const order = first.layers.map(({ id }) => id);
   assert.deepEqual(
@@ -160,7 +161,7 @@ test('Mapillary can be omitted or replaced without changing catalog membership',
   };
   const catalog = createApplicationCatalog(options);
   assert.ok(
-    catalog.layers.length >= 32,
+    catalog.layers.length >= 33,
     'core catalog membership is preserved',
   );
   assert.deepEqual(catalog.get('street-level').providerIds, []);
