@@ -28,3 +28,6 @@ pinokio/.installed
 
 # Transient: a release interrupted mid-assembly (npm run changelog recovers it)
 changelog.d/.assembling/
+
+# ClimateViewer assets: copied from a sibling cv/ clone by `npm run sync:cv`.
+public/cv/
