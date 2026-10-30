@@ -2996,5 +2996,8 @@
   "ESC to dismiss": "ESC pour fermer",
   "Tip: the GEV MIC button in the dock lets you talk to the map.": "Astuce : le bouton GEV MIC du dock permet de parler à la carte.",
   "Malformed cyclone snapshot": "Instantané cyclonique mal formé",
-  "Cyclone request timed out": "Délai dépassé pour la requête cyclonique"
+  "Cyclone request timed out": "Délai dépassé pour la requête cyclonique",
+  "Filter ClimateViewer layers": "Filter ClimateViewer layers",
+  "refine the filter to see more": "refine the filter to see more",
+  "ClimateViewer ({count})": "ClimateViewer ({count})"
 }

@@ -17,6 +17,10 @@
  * @module voice/layerManifest
  */
 
+import climateViewerCatalog from '../layers/climateviewer/catalog.json' with {
+  type: 'json',
+};
+
 /**
  * Field type shorthands: n = number, t = text, f = flag (boolean),
  * ms = epoch-milliseconds time (filters also accept ISO strings).
@@ -424,6 +428,13 @@ const layers = [
 export const VOICE_OFF_LAYERS = Object.freeze({
   'bhote-koshi-2026': 'scene-driven event layer (control_scene)',
   'bhote-koshi-locator': 'scene-driven event layer (control_scene)',
+  // ClimateViewer layers are panel-toggled for now; voice vocabulary is Phase 5.
+  ...Object.fromEntries(
+    Object.keys(climateViewerCatalog.layers).map((id) => [
+      id,
+      'ClimateViewer layer (voice deferred)',
+    ]),
+  ),
 });
 
 const TYPE_NAMES = Object.freeze({

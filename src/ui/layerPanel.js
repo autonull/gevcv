@@ -444,7 +444,7 @@ export class LayerPanel {
     details.className = 'data-cv-section';
     const summary = document.createElement('summary');
     summary.className = 'data-layer-group-heading';
-    summary.textContent = `ClimateViewer (${layers.length})`;
+    summary.textContent = t('ClimateViewer ({count})', { count: layers.length });
     details.appendChild(summary);
 
     const body = document.createElement('div');
@@ -532,7 +532,6 @@ export class LayerPanel {
       const chip = document.createElement('span');
       chip.className = `data-cv-badge data-cv-badge-${badge.kind}`;
       chip.textContent = badge.label;
-      chip.title = badge.title;
       right.appendChild(chip);
     }
     const toggle = document.createElement('button');
@@ -542,7 +541,7 @@ export class LayerPanel {
       'aria-pressed',
       this.isEnabled(layer.id) ? 'true' : 'false',
     );
-    toggle.textContent = this.isEnabled(layer.id) ? 'ON' : 'OFF';
+    toggle.textContent = t(this.isEnabled(layer.id) ? 'ON' : 'OFF');
     this._bind(toggle, 'click', async () => {
       if (
         this._destroyed ||
@@ -561,7 +560,7 @@ export class LayerPanel {
         const live = this.getAll().find(({ id }) => id === layer.id);
         if (!this._destroyed && this._generation === generation && live) {
           toggle.classList.toggle('active', Boolean(live.enabled));
-          toggle.textContent = live.enabled ? 'ON' : 'OFF';
+          toggle.textContent = t(live.enabled ? 'ON' : 'OFF');
           toggle.setAttribute('aria-pressed', live.enabled ? 'true' : 'false');
         }
         toggle.removeAttribute('aria-disabled');
@@ -582,12 +581,11 @@ export class LayerPanel {
   _climateViewerBadges(layer) {
     const badges = [];
     const flags = layer.metadata?.flags ?? {};
-    if (flags.large) badges.push({ kind: 'large', label: 'L', title: 'Large layer' });
-    if (flags.timeline) badges.push({ kind: 'time', label: 'T', title: 'Time enabled' });
-    if (flags.proxy) badges.push({ kind: 'proxy', label: 'P', title: 'Source needs a proxy' });
-    if (layer.metadata?.role === 'basemap')
-      badges.push({ kind: 'base', label: 'B', title: 'Basemap' });
-    if (layer.keyRequired) badges.push({ kind: 'key', label: 'K', title: 'Requires an API key' });
+    if (flags.large) badges.push({ kind: 'large', label: 'L' });
+    if (flags.timeline) badges.push({ kind: 'time', label: 'T' });
+    if (flags.proxy) badges.push({ kind: 'proxy', label: 'P' });
+    if (layer.metadata?.role === 'basemap') badges.push({ kind: 'base', label: 'B' });
+    if (layer.keyRequired) badges.push({ kind: 'key', label: 'K' });
     return badges;
   }
 

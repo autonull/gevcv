@@ -1,11 +1,9 @@
 import * as Cesium from 'cesium';
 import catalog from './catalog.json' with { type: 'json' };
-import { CLIMATEVIEWER_LAYER_STATE_REGISTRY } from './layerState.generated.js';
 import { createImageryProvider, describeLoadFailure } from './imagery.js';
 import { loadVectorDataSource, readAnalystRecords } from './vector.js';
 
 export { createClimateViewerClock } from './clock.js';
-export { CLIMATEVIEWER_LAYER_STATE_REGISTRY } from './layerState.generated.js';
 export {
   applyMarkerOverrides,
   LARGE_LAYER_ENTITY_CAP,

@@ -1,6 +1,7 @@
 import { resolveCatalogSources } from './sourceComposition.js';
 import { createWeatherClock } from '../layers/weather/clock.js';
 import {
+  CLIMATEVIEWER_LAYERS,
   createClimateViewerClock,
   createClimateViewerLayers,
 } from '../layers/climateviewer/index.js';
@@ -47,9 +48,21 @@ export const LOCAL_ONLY_LAYER_METADATA = Object.freeze([
   Object.freeze({ id: 'local-adsb', disposition: 'local-only' }),
 ]);
 
+/**
+ * ClimateViewer carries hundreds of optional layers. They are catalog members
+ * but stay out of share links: 405 token entries would break the URL bound and
+ * the core token ledger. `local-only` is the manager's "never serialized" state.
+ */
+export const CLIMATEVIEWER_LAYER_METADATA = Object.freeze(
+  CLIMATEVIEWER_LAYERS.map(({ id }) =>
+    Object.freeze({ id, disposition: 'local-only' }),
+  ),
+);
+
 /** Serialization metadata for every layer the application catalog constructs. */
 export const APPLICATION_LAYER_METADATA = Object.freeze([
   ...LAYER_STATE_REGISTRY,
+  ...CLIMATEVIEWER_LAYER_METADATA,
   ...LOCAL_ONLY_LAYER_METADATA,
 ]);
 

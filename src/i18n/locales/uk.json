@@ -3066,5 +3066,8 @@
   "ESC to dismiss": "ESC — приховати",
   "Tip: the GEV MIC button in the dock lets you talk to the map.": "Порада: кнопка МІК у доку дає змогу говорити з картою.",
   "Malformed cyclone snapshot": "Некоректний знімок циклонів",
-  "Cyclone request timed out": "Минув час очікування запиту циклонів"
+  "Cyclone request timed out": "Минув час очікування запиту циклонів",
+  "Filter ClimateViewer layers": "Filter ClimateViewer layers",
+  "refine the filter to see more": "refine the filter to see more",
+  "ClimateViewer ({count})": "ClimateViewer ({count})"
 }
