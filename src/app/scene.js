@@ -7,6 +7,8 @@ import {
 import { registerDataCredits } from '../data/dataCredits.js';
 import { configureCreditKeyboardAccess } from '../creditKeyboard.js';
 import { MapStackController } from '../mapStackController.js';
+import { createClimateViewerBasemapSources } from '../layers/climateviewer/basemaps.js';
+import { createIonImagery } from '../maps/imagery.js';
 import { loadPhotorealisticTileset } from '../mapStartup.js';
 import { initLogoGaze } from '../logoGaze.js';
 import {
@@ -103,9 +105,18 @@ export async function createApplicationScene({
 
   loaderStatus.textContent = t('Initializing systems...');
 
+  const climateViewerBasemaps = createClimateViewerBasemapSources({
+    ionImagery: cesiumToken
+      ? (style) => createIonImagery(style, cesiumToken)
+      : null,
+  });
   const mapStackController = new MapController(viewer, {
     requestRender: governorRequestRender,
     ...mapOptions,
+    extraSources: [
+      ...(mapOptions.extraSources ?? []),
+      ...climateViewerBasemaps,
+    ],
     googleTileset: tileset,
     cesiumToken,
     initialStack: tileset ? 'photoreal' : 'esri-imagery',

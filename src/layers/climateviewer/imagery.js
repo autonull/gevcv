@@ -12,7 +12,9 @@ export class ClimateViewerKeyRequiredError extends Error {
 
 /** CartoDB templates use Leaflet's `{s}` subdomain placeholder. */
 function templateUrl(url) {
-  return String(url).replace('{s}', 'a');
+  return String(url)
+    .replace('{s}', 'a')
+    .replace(/^http:\/\//i, 'https://');
 }
 
 /**

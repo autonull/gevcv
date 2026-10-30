@@ -5,6 +5,11 @@ import { createClimateViewerLayer } from './index.js';
 import { createImageryFamily } from './families/imageryFamily.js';
 import { createVectorFamily } from './families/vectorFamily.js';
 import { createFamily, familyFactory } from './families/index.js';
+import {
+  CLIMATEVIEWER_BASEMAPS,
+  createClimateViewerBasemapSources,
+  isClimateViewerBasemapId,
+} from './basemaps.js';
 
 const definition = {
   id: 'cv-test-layer',
@@ -51,6 +56,91 @@ function fakeSource(count = 2) {
     entities: { values: Array.from({ length: count }, (_, id) => ({ id })) },
   };
 }
+
+test('every catalog basemap becomes one exclusive map-stack source', () => {
+  const sources = createClimateViewerBasemapSources();
+  assert.equal(sources.length, 11);
+  assert.equal(sources.length, CLIMATEVIEWER_BASEMAPS.length);
+  assert.equal(new Set(sources.map(({ descriptor }) => descriptor.id)).size, 11);
+  for (const source of sources) {
+    assert.equal(isClimateViewerBasemapId(source.descriptor.id), true);
+    assert.equal(source.descriptor.kind, 'climateviewer');
+  }
+  const bing = sources.filter(({ descriptor }) => descriptor.requiresIon);
+  assert.equal(bing.length, 3);
+  assert.ok(bing.every((source) => source.available === false));
+  assert.ok(
+    sources
+      .filter(({ descriptor }) => !descriptor.requiresIon)
+      .every((source) => source.available === true),
+  );
+});
+
+test('an Ion factory makes the Bing basemap sources available', () => {
+  const styles = [];
+  const sources = createClimateViewerBasemapSources({
+    ionImagery: (style) => {
+      styles.push(style);
+      return { style };
+    },
+  });
+  const bing = sources.filter(({ descriptor }) => descriptor.requiresIon);
+  assert.ok(bing.every((source) => source.available === true));
+  bing[0].imagery();
+  assert.equal(styles.length, 1);
+});
+
+test('a basemap layer selects the map stack instead of the overlay rail', async () => {
+  const stack = {
+    activeId: 'esri-imagery',
+    calls: [],
+    listeners: new Set(),
+    getActiveId() {
+      return this.activeId;
+    },
+    getDefaultId() {
+      return 'esri-imagery';
+    },
+    async setStack(id) {
+      this.calls.push(id);
+      this.activeId = id;
+      for (const listener of this.listeners) listener({ activeId: id });
+      return { activeId: id, lastError: null };
+    },
+    subscribe(listener) {
+      this.listeners.add(listener);
+      return () => this.listeners.delete(listener);
+    },
+  };
+  const attached = [];
+  const family = {
+    attach: async () => {
+      attached.push('attach');
+      return true;
+    },
+    detach: () => attached.push('detach'),
+    records: () => [],
+    stats: () => ({ count: 0, status: 'idle', error: null, lastUpdate: null }),
+  };
+  const layer = createClimateViewerLayer(
+    {
+      ...definition,
+      id: 'cv-basemaps-test',
+      family: 'cartodb',
+      role: 'basemap',
+    },
+    { familyFor: () => family },
+  );
+  layer.attachMapStackController(stack);
+  assert.equal(await layer.enable(), true);
+  assert.deepEqual(stack.calls, ['cv-basemaps-test']);
+  assert.equal(await layer.update(), true);
+  assert.equal(layer.getStats().status, 'ok');
+  assert.deepEqual(attached, []);
+  layer.disable();
+  assert.deepEqual(stack.calls, ['cv-basemaps-test', 'esri-imagery']);
+  assert.equal(layer.getStats().status, 'idle');
+});
 
 test('family registry resolves every catalog family and rejects unknown ids', () => {
   for (const family of [

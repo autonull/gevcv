@@ -327,3 +327,16 @@ test('unreachable keyless terrain falls back to flat terrain marked as a fallbac
   assert.ok(result.provider instanceof Cesium.EllipsoidTerrainProvider);
   assert.equal(result.fallback, true);
 });
+
+test('extra map sources extend the registry without displacing defaults', () => {
+  const extra = {
+    descriptor: { id: 'cv-test-basemap', label: 'Test', kind: 'climateviewer' },
+    imagery: () => ({}),
+  };
+  const registry = createDefaultMapSources({ extraSources: [extra] });
+  assert.equal(registry.sources[0], extra);
+  assert.ok(
+    registry.sources.some(({ descriptor }) => descriptor.id === 'esri-imagery'),
+  );
+  assert.equal(registry.defaultId, 'esri-imagery');
+});

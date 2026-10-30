@@ -4,6 +4,7 @@ import health from './health.json' with { type: 'json' };
 import { createImageryProvider } from './imagery.js';
 import { loadVectorDataSource, readAnalystRecords } from './vector.js';
 import { createFamily } from './families/index.js';
+import { isClimateViewerBasemapId } from './basemaps.js';
 
 export { createClimateViewerClock } from './clock.js';
 export {
@@ -122,9 +123,73 @@ export function createClimateViewerLayer(
     createImagery,
   });
   const refreshInterval = climateViewerRefreshInterval(definition);
+  const isBasemap = definition.role === 'basemap';
   let viewer = null;
   let enabled = false;
   let destroyed = false;
+  let mapStack = null;
+  let dataManager = null;
+  let unsubscribeMapStack = null;
+  let previousStackId = null;
+  let basemapStatus = 'idle';
+  let basemapError = null;
+  let basemapRemedy = null;
+  let basemapLastUpdate = null;
+
+  function rememberPreviousStack() {
+    const active = mapStack?.getActiveId?.() ?? null;
+    previousStackId =
+      active && !isClimateViewerBasemapId(active) ? active : null;
+  }
+
+  async function enableBasemap() {
+    if (!mapStack?.setStack) {
+      basemapStatus = 'error';
+      basemapError = 'The map stack is unavailable';
+      return false;
+    }
+    rememberPreviousStack();
+    enabled = true;
+    basemapStatus = 'loading';
+    const state = await mapStack.setStack(definition.id);
+    if (destroyed) return false;
+    if (state?.activeId === definition.id && !state.lastError) {
+      basemapStatus = 'ok';
+      basemapError = null;
+      basemapRemedy = null;
+      basemapLastUpdate = Date.now();
+      return true;
+    }
+    enabled = false;
+    basemapStatus = 'error';
+    basemapError =
+      state?.lastError || 'The map stack did not activate this basemap';
+    basemapRemedy =
+      'Choose a different map source, or remove this basemap from settings.';
+    return false;
+  }
+
+  function disableBasemap() {
+    enabled = false;
+    basemapStatus = 'idle';
+    if (!mapStack) return;
+    if (mapStack.getActiveId?.() !== definition.id) return;
+    const target = previousStackId || mapStack.getDefaultId?.() || null;
+    previousStackId = null;
+    if (!target || target === definition.id) return;
+    void mapStack.setStack(target).catch(() => {});
+  }
+
+  function syncWithMapStack(state) {
+    if (!isBasemap || !enabled || destroyed) return;
+    if (state?.activeId === definition.id) return;
+    enabled = false;
+    basemapStatus = 'idle';
+    previousStackId = null;
+    void dataManager
+      ?.setEnabled(definition.id, false, { origin: 'programmatic' })
+      .catch(() => {});
+  }
 
   const layer = {
     id: definition.id,
@@ -147,6 +212,7 @@ export function createClimateViewerLayer(
 
     async enable(target) {
       if (target) viewer = target;
+      if (isBasemap) return enableBasemap();
       if (!viewer) throw new Error('ClimateViewer layer needs a viewer');
       enabled = true;
       const attached = await family.attach(viewer);
@@ -155,11 +221,14 @@ export function createClimateViewerLayer(
     },
 
     disable() {
+      if (isBasemap) return disableBasemap();
       enabled = false;
       family.detach();
     },
 
     async update() {
+      if (isBasemap)
+        return !destroyed && mapStack?.getActiveId?.() === definition.id;
       if (!enabled || !viewer) return false;
       const { status } = family.stats();
       if (status === 'ok' || status === 'empty') {
@@ -173,21 +242,50 @@ export function createClimateViewerLayer(
     destroy(target = viewer) {
       enabled = false;
       destroyed = true;
+      unsubscribeMapStack?.();
+      unsubscribeMapStack = null;
+      mapStack = null;
+      dataManager = null;
       if (target && target !== viewer) viewer = target;
       family.detach();
       viewer = null;
     },
 
+    attachMapStackController(controller) {
+      mapStack = controller ?? null;
+      unsubscribeMapStack?.();
+      unsubscribeMapStack =
+        typeof controller?.subscribe === 'function'
+          ? controller.subscribe(syncWithMapStack)
+          : null;
+    },
+
+    attachDataManager(manager) {
+      dataManager = manager ?? null;
+    },
+
     getAnalystRecords(maxCount = 2000) {
-      return family.records(maxCount);
+      return isBasemap ? [] : family.records(maxCount);
     },
 
     zoomTo() {
-      if (!viewer) return false;
+      if (isBasemap || !viewer) return false;
       return family.zoomTo?.() ?? false;
     },
 
     getStats() {
+      if (isBasemap) {
+        const status = destroyed ? 'destroyed' : basemapStatus;
+        return {
+          count: status === 'ok' ? 1 : 0,
+          status,
+          available:
+            status === 'ok' || status === 'idle' || status === 'loading',
+          error: basemapError,
+          remedy: basemapRemedy,
+          lastUpdate: basemapLastUpdate,
+        };
+      }
       const stats = family.stats();
       const status = destroyed ? 'destroyed' : stats.status;
       return {

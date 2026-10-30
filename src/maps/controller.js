@@ -110,6 +110,10 @@ export class MapSourceController {
   getActiveId() {
     return this._activeId;
   }
+  /** The registry's fallback stack, used when a temporary basemap is released. */
+  getDefaultId() {
+    return this._registry.defaultId;
+  }
   getActiveStack() {
     return this.getStack(this._activeId);
   }

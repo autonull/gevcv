@@ -15,6 +15,7 @@ export function createDefaultMapSources({
   googleTileset = null,
   cesiumToken = '',
   googleApiKey = '',
+  extraSources = [],
 } = {}) {
   const ionToken = String(cesiumToken || '').trim();
   const hasIon = Boolean(ionToken);
@@ -30,48 +31,51 @@ export function createDefaultMapSources({
     unknownId: 'photoreal',
     recoveryId: googleTileset ? 'photoreal' : null,
     state: { hasCesiumIonToken: hasIon },
-    sources: MAP_STACKS.map((descriptor) => {
-      const common = {
-        descriptor,
-        available: !descriptor.requiresIon || hasIon,
-        unavailableReason: descriptor.requiresIon
-          ? t('Needs {envVars} — add it in Provider Settings', {
-              envVars: keySetupRequirementEnvVars('cesium-ion'),
-            })
-          : null,
-      };
-      if (descriptor.kind === 'photoreal')
+    sources: [
+      ...extraSources,
+      ...MAP_STACKS.map((descriptor) => {
+        const common = {
+          descriptor,
+          available: !descriptor.requiresIon || hasIon,
+          unavailableReason: descriptor.requiresIon
+            ? t('Needs {envVars} — add it in Provider Settings', {
+                envVars: keySetupRequirementEnvVars('cesium-ion'),
+              })
+            : null,
+        };
+        if (descriptor.kind === 'photoreal')
+          return {
+            ...common,
+            available: Boolean(googleTileset),
+            unavailableReason: photorealUnavailableReason(hasIon || hasGoogle),
+            tileset: googleTileset,
+          };
+        const imagery =
+          descriptor.kind === 'ion'
+            ? () => createIonImagery(descriptor.style, ionToken)
+            : descriptor.id === 'osm'
+              ? createOsmImagery
+              : createEsriImagery;
         return {
           ...common,
-          available: Boolean(googleTileset),
-          unavailableReason: photorealUnavailableReason(hasIon || hasGoogle),
-          tileset: googleTileset,
+          imagery,
+          terrain,
+          ...(descriptor.id === 'esri-imagery'
+            ? {
+                credit: ESRI_ATTRIBUTION_HTML,
+                constructionFallback: {
+                  id: 'osm',
+                  message: 'Esri Satellite is unavailable; using OSM',
+                },
+                tileFailureFallback: {
+                  id: 'osm',
+                  threshold: 2,
+                  message: 'Esri Satellite tile requests failed; using OSM',
+                },
+              }
+            : {}),
         };
-      const imagery =
-        descriptor.kind === 'ion'
-          ? () => createIonImagery(descriptor.style, ionToken)
-          : descriptor.id === 'osm'
-            ? createOsmImagery
-            : createEsriImagery;
-      return {
-        ...common,
-        imagery,
-        terrain,
-        ...(descriptor.id === 'esri-imagery'
-          ? {
-              credit: ESRI_ATTRIBUTION_HTML,
-              constructionFallback: {
-                id: 'osm',
-                message: 'Esri Satellite is unavailable; using OSM',
-              },
-              tileFailureFallback: {
-                id: 'osm',
-                threshold: 2,
-                message: 'Esri Satellite tile requests failed; using OSM',
-              },
-            }
-          : {}),
-      };
-    }),
+      }),
+    ],
   };
 }
