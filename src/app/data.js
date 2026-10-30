@@ -37,6 +37,13 @@ export function createApplicationData({
   // Restoration starts only after the caller's complete registry is sealed.
   dataManager.finalizeRegistrations(catalog.metadata);
   if (allowQaRegistration) {
+    // Read-only handle for the screenshot tour: toggles go through the panel.
+    window.__gevData = dataManager;
+    window.__gevViewer = viewer;
+    defer(() => {
+      if (window.__gevData === dataManager) delete window.__gevData;
+      if (window.__gevViewer === viewer) delete window.__gevViewer;
+    });
     window.__gevQaRegisterLayer = (targetManager, layerModule) => {
       if (targetManager !== dataManager)
         throw new Error('QA layer manager mismatch');

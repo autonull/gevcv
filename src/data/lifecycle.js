@@ -2261,6 +2261,11 @@ export class LayerLifecycle {
         icon: entry.module.icon,
         source: entry.module.source,
         showInTogglePanel: entry.module.showInTogglePanel !== false,
+        panelGroup: entry.module.panelGroup ?? null,
+        metadata: entry.module.metadata ?? null,
+        family: entry.module.family ?? null,
+        role: entry.module.role ?? null,
+        keyRequired: entry.module.keyRequired === true,
         // Registry id of the provider key this layer needs, if any (mirrors
         // showInTogglePanel). The layer reports stats.keyRequired while that
         // key is absent; the panel builds the guidance text from the pair.

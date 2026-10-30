@@ -3,6 +3,8 @@
 const msg = (text) => text;
 import { normalizeIdSwitches, patchRequestedIdSwitches } from './idSwitches.js';
 import reservationRows from './layerStateTokenReservations.json' with { type: 'json' };
+import climateViewerReservationRows from './climateviewerTokenReservations.json' with { type: 'json' };
+import { CLIMATEVIEWER_LAYER_STATE_REGISTRY } from '../layers/climateviewer/layerState.generated.js';
 
 const VALID_DISPOSITIONS = new Set([
   'enabled-only',
@@ -558,7 +560,10 @@ export function parseLayerStateTokenReservations(rows) {
 }
 
 export const LAYER_STATE_TOKEN_RESERVATIONS =
-  parseLayerStateTokenReservations(reservationRows);
+  parseLayerStateTokenReservations([
+    ...reservationRows,
+    ...climateViewerReservationRows,
+  ]);
 
 /**
  * Canonical serialization registry. Its order, not runtime registration order,
@@ -708,6 +713,7 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled+options',
     optionOwner: 'wind',
   }),
+  ...CLIMATEVIEWER_LAYER_STATE_REGISTRY,
 ]);
 
 export const REGISTERED_LAYER_IDS = Object.freeze(

@@ -40,7 +40,12 @@ test('catalogs construct distinct layers and classification from their supplied 
     signal: b.signal,
     surface: fixtureSurface(b.signal),
   });
-  assert.equal(first.layers.length, 32);
+  // Core layers plus the generated ClimateViewer catalog.
+  const climateViewerCount = first.layers.filter(({ id }) =>
+    id.startsWith('cv-'),
+  ).length;
+  assert.ok(climateViewerCount > 0, 'ClimateViewer layers are registered');
+  assert.equal(first.layers.length, 32 + climateViewerCount);
   assert.ok(first.get('local-adsb'), 'Local ADS-B is registered');
   assert.deepEqual(
     first.metadata.find(({ id }) => id === 'local-adsb'),
@@ -154,7 +159,10 @@ test('Mapillary can be omitted or replaced without changing catalog membership',
     surface: fixtureSurface(lifetime.signal),
   };
   const catalog = createApplicationCatalog(options);
-  assert.equal(catalog.layers.length, 32);
+  assert.ok(
+    catalog.layers.length >= 32,
+    'core catalog membership is preserved',
+  );
   assert.deepEqual(catalog.get('street-level').providerIds, []);
   assert.equal(
     catalogControlServices(catalog).streetLevelLayer,

@@ -5,7 +5,8 @@ import { t } from './i18n/index.js';
 const application = createStandaloneApplication({
   googleApiKey: import.meta.env.GOOGLE_MAPS_API_KEY,
   cesiumToken: import.meta.env.CESIUM_ION_TOKEN,
-  allowQaRegistration: import.meta.env.DEV,
+  allowQaRegistration:
+    import.meta.env.DEV || import.meta.env.VITE_QA_HANDLE === '1',
 });
 
 application.start().catch((error) => {

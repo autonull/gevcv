@@ -37,7 +37,10 @@ test('every acquisition source can be omitted without losing catalog membership'
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  assert.equal(actual.layers.length, 32);
+  const climateViewerCount = actual.layers.filter(({ id }) =>
+    id.startsWith('cv-'),
+  ).length;
+  assert.equal(actual.layers.length, 32 + climateViewerCount);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },

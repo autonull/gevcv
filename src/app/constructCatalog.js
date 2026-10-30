@@ -1,5 +1,9 @@
 import { resolveCatalogSources } from './sourceComposition.js';
 import { createWeatherClock } from '../layers/weather/clock.js';
+import {
+  createClimateViewerClock,
+  createClimateViewerLayers,
+} from '../layers/climateviewer/index.js';
 import { createWeatherLayer } from '../layers/weather/index.js';
 import { createCyclonesLayer } from '../layers/cyclones/index.js';
 import { createWindLayer } from '../layers/wind/index.js';
@@ -72,10 +76,12 @@ export function createApplicationCatalog({
   sources = sourceComposition.sources;
   const militaryRegistry = createMilitaryRegistry();
   const weatherClock = createWeatherClock();
+  const climateViewerClock = createClimateViewerClock();
   const dispose = () => {
     signal.removeEventListener('abort', dispose);
     militaryRegistry.dispose();
     weatherClock.destroy();
+    climateViewerClock.destroy();
   };
   signal.addEventListener('abort', dispose, { once: true });
   try {
@@ -167,6 +173,10 @@ export function createApplicationCatalog({
         }),
         createCyclonesLayer({ feed: sources.cyclones }),
         ...createInfrastructureLayers(localGeoJsonServices),
+        ...createClimateViewerLayers({
+          clock: climateViewerClock,
+          resolveAsset,
+        }),
         createApplicationCables({ source: sources.cables }),
         createApplicationFirms({
           surface,
@@ -187,6 +197,7 @@ export function createApplicationCatalog({
       militaryRegistry,
       surface,
       weatherClock,
+      climateViewerClock,
     });
   } catch (error) {
     dispose();

@@ -290,8 +290,13 @@ export class LayerPanel {
           (PANEL_POSITIONS.get(b.id) ?? PANEL_ORDER.length),
       );
     let previousGroup = '';
+    const climateViewerLayers = [];
     for (const layer of layers) {
       if (!layer.showInTogglePanel) continue;
+      if (layer.panelGroup === 'ClimateViewer') {
+        climateViewerLayers.push(layer);
+        continue;
+      }
       const group =
         PANEL_ORDER[PANEL_POSITIONS.get(layer.id)]?.label ??
         msg('Other layers');
@@ -422,7 +427,165 @@ export class LayerPanel {
 
       this._toggleContainer.appendChild(row);
     }
+    if (climateViewerLayers.length)
+      this._renderClimateViewerRows(climateViewerLayers, generation);
     this._refreshWeatherPanel();
+  }
+
+  /**
+   * ClimateViewer carries hundreds of layers; render them behind one collapsed
+   * section with a filter, and build row DOM only when it is opened.
+   */
+  _renderClimateViewerRows(layers, generation) {
+    const details = document.createElement('details');
+    details.className = 'data-cv-section';
+    const summary = document.createElement('summary');
+    summary.className = 'data-layer-group-heading';
+    summary.textContent = `ClimateViewer (${layers.length})`;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'data-cv-body';
+    const filter = document.createElement('input');
+    filter.type = 'search';
+    filter.className = 'data-cv-filter';
+    filter.placeholder = msg('Filter ClimateViewer layers');
+    filter.setAttribute('aria-label', msg('Filter ClimateViewer layers'));
+    const list = document.createElement('div');
+    list.className = 'data-cv-list';
+    body.appendChild(filter);
+    body.appendChild(list);
+    details.appendChild(body);
+    this._toggleContainer.appendChild(details);
+
+    const renderList = () => {
+      const query = filter.value.trim().toLowerCase();
+      const matches = layers.filter(
+        (layer) =>
+          !query ||
+          layer.name.toLowerCase().includes(query) ||
+          layer.id.includes(query) ||
+          (layer.metadata?.category ?? '').toLowerCase().includes(query),
+      );
+      list.textContent = '';
+      const shown = matches.slice(0, 80);
+      let previousCategory = '';
+      for (const layer of shown) {
+        const category = layer.metadata?.category ?? '';
+        if (category !== previousCategory) {
+          const heading = document.createElement('div');
+          heading.className = 'data-cv-category';
+          heading.textContent = category;
+          list.appendChild(heading);
+          previousCategory = category;
+        }
+        list.appendChild(this._createClimateViewerRow(layer, generation));
+      }
+      if (matches.length > shown.length) {
+        const note = document.createElement('div');
+        note.className = 'data-cv-note';
+        note.textContent = `${shown.length} / ${matches.length} — ${
+          msg('refine the filter to see more')
+        }`;
+        list.appendChild(note);
+      }
+    };
+
+    let rendered = false;
+    const onToggle = () => {
+      if (!details.open || rendered) return;
+      rendered = true;
+      renderList();
+    };
+    this._bind(details, 'toggle', onToggle);
+    this._bind(filter, 'input', () => {
+      if (rendered) renderList();
+    });
+  }
+
+  _createClimateViewerRow(layer, generation) {
+    const row = document.createElement('div');
+    row.className = 'data-toggle-row data-cv-row';
+    row.dataset.layerId = layer.id;
+    row.dataset.layerName = layer.name;
+
+    const topRow = document.createElement('div');
+    topRow.className = 'data-toggle-top';
+    const left = document.createElement('div');
+    left.className = 'data-toggle-left';
+    const icon = document.createElement('span');
+    icon.className = 'data-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = layer.icon;
+    const name = document.createElement('span');
+    name.className = 'data-name';
+    name.textContent = layer.name;
+    left.appendChild(icon);
+    left.appendChild(name);
+
+    const right = document.createElement('div');
+    right.className = 'data-toggle-right';
+    for (const badge of this._climateViewerBadges(layer)) {
+      const chip = document.createElement('span');
+      chip.className = `data-cv-badge data-cv-badge-${badge.kind}`;
+      chip.textContent = badge.label;
+      chip.title = badge.title;
+      right.appendChild(chip);
+    }
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = `data-toggle-btn${this.isEnabled(layer.id) ? ' active' : ''}`;
+    toggle.setAttribute(
+      'aria-pressed',
+      this.isEnabled(layer.id) ? 'true' : 'false',
+    );
+    toggle.textContent = this.isEnabled(layer.id) ? 'ON' : 'OFF';
+    this._bind(toggle, 'click', async () => {
+      if (
+        this._destroyed ||
+        this._generation !== generation ||
+        toggle.getAttribute('aria-disabled') === 'true'
+      )
+        return;
+      toggle.setAttribute('aria-disabled', 'true');
+      try {
+        await this.setEnabled(layer.id, !this.isEnabled(layer.id), {
+          origin: 'user',
+        });
+      } catch (error) {
+        console.warn(`[Data] ${layer.id} toggle error:`, error);
+      } finally {
+        const live = this.getAll().find(({ id }) => id === layer.id);
+        if (!this._destroyed && this._generation === generation && live) {
+          toggle.classList.toggle('active', Boolean(live.enabled));
+          toggle.textContent = live.enabled ? 'ON' : 'OFF';
+          toggle.setAttribute('aria-pressed', live.enabled ? 'true' : 'false');
+        }
+        toggle.removeAttribute('aria-disabled');
+      }
+    });
+    right.appendChild(toggle);
+    topRow.appendChild(left);
+    topRow.appendChild(right);
+    row.appendChild(topRow);
+
+    const meta = document.createElement('div');
+    meta.className = 'data-toggle-meta';
+    meta.textContent = layer.metadata?.sourceUrl || layer.family || '';
+    row.appendChild(meta);
+    return row;
+  }
+
+  _climateViewerBadges(layer) {
+    const badges = [];
+    const flags = layer.metadata?.flags ?? {};
+    if (flags.large) badges.push({ kind: 'large', label: 'L', title: 'Large layer' });
+    if (flags.timeline) badges.push({ kind: 'time', label: 'T', title: 'Time enabled' });
+    if (flags.proxy) badges.push({ kind: 'proxy', label: 'P', title: 'Source needs a proxy' });
+    if (layer.metadata?.role === 'basemap')
+      badges.push({ kind: 'base', label: 'B', title: 'Basemap' });
+    if (layer.keyRequired) badges.push({ kind: 'key', label: 'K', title: 'Requires an API key' });
+    return badges;
   }
 
   _scheduleRowControlsRefresh() {
