@@ -182,6 +182,11 @@ export function createClimateViewerLayer(
       return family.records(maxCount);
     },
 
+    zoomTo() {
+      if (!viewer) return false;
+      return family.zoomTo?.() ?? false;
+    },
+
     getStats() {
       const stats = family.stats();
       const status = destroyed ? 'destroyed' : stats.status;
@@ -207,6 +212,7 @@ export function createClimateViewerLayer(
       role: definition.role,
       providerUrl: definition.url,
       traits: definition.traits,
+      health: health.results[definition.id] ?? null,
     }),
   };
 

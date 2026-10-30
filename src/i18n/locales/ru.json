@@ -3068,6 +3068,5 @@
   "routing busy — too many routes at once": "сервис маршрутов занят: слишком много маршрутов одновременно",
   "route proxy error": "ошибка прокси маршрутов",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "refine the filter to see more": "refine the filter to see more",
   "ClimateViewer ({count})": "ClimateViewer ({count})"
 }

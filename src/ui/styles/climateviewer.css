@@ -1,0 +1,189 @@
+/* ClimateViewer atlas rows: a dense, scannable tree inside the layer rail. */
+
+.data-cv-body {
+  display: grid;
+  gap: 6px;
+  padding: 6px 0 10px;
+}
+
+.data-cv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.data-cv-filter {
+  flex: 1;
+  min-width: 0;
+}
+
+.data-cv-count {
+  font:
+    10px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  opacity: 0.62;
+  white-space: nowrap;
+}
+
+.data-cv-clear {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.data-cv-legend {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  opacity: 0.8;
+}
+
+.data-cv-category {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 5px 2px 3px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.68;
+  background: var(--panel-bg, #0b0f14);
+}
+
+.data-cv-row {
+  border-bottom: 1px solid rgb(255 255 255 / 6%);
+}
+
+.data-cv-row:nth-child(even) {
+  background: rgb(255 255 255 / 2%);
+}
+
+.data-cv-row .data-toggle-top {
+  gap: 4px;
+}
+
+.data-cv-info {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: none;
+  color: inherit;
+  font:
+    italic 9px/1 Georgia,
+    serif;
+  opacity: 0.5;
+  padding: 0;
+  cursor: pointer;
+}
+
+.data-cv-info:hover,
+.data-cv-info[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.data-cv-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 3px;
+  font:
+    650 9px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  letter-spacing: 0.02em;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 82%);
+}
+
+.data-cv-badge-large {
+  background: rgb(255 178 72 / 18%);
+  color: #ffb248;
+}
+
+.data-cv-badge-time {
+  background: rgb(94 196 255 / 18%);
+  color: #5ec4ff;
+}
+
+.data-cv-badge-proxy {
+  background: rgb(178 140 255 / 18%);
+  color: #b28cff;
+}
+
+.data-cv-badge-base {
+  background: rgb(120 220 160 / 18%);
+  color: #78dca0;
+}
+
+.data-cv-badge-key {
+  background: rgb(255 92 112 / 18%);
+  color: #ff5c70;
+}
+
+.data-cv-badge-health {
+  background: rgb(255 92 112 / 22%);
+  color: #ff5c70;
+}
+
+.data-cv-badge.health-cors,
+.data-cv-badge.health-dead,
+.data-cv-badge.health-key-required,
+.data-cv-badge.health-assets-missing {
+  background: rgb(255 92 112 / 22%);
+  color: #ff5c70;
+}
+
+.data-cv-badge.health-redirect {
+  background: rgb(255 178 72 / 18%);
+  color: #ffb248;
+}
+
+.data-cv-drawer {
+  display: grid;
+  gap: 3px;
+  padding: 5px 4px 8px 20px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 72%);
+}
+
+.data-cv-drawer-line {
+  overflow-wrap: anywhere;
+}
+
+.data-cv-drawer a {
+  color: #5ec4ff;
+}
+
+.data-cv-drawer-health {
+  color: #ffb248;
+}
+
+.data-cv-drawer-error {
+  color: #ff5c70;
+}
+
+.data-cv-drawer-remedy {
+  color: rgb(255 255 255 / 58%);
+  font-style: italic;
+}
+
+.data-cv-note {
+  padding: 8px 4px;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .data-cv-info,
+  .data-cv-clear {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}

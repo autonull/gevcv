@@ -2998,6 +2998,5 @@
   "routing busy — too many routes at once": "servicio de rutas ocupado: demasiadas rutas a la vez",
   "route proxy error": "error del proxy de rutas",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "refine the filter to see more": "refine the filter to see more",
   "ClimateViewer ({count})": "ClimateViewer ({count})"
 }

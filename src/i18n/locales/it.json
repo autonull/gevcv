@@ -2998,6 +2998,5 @@
   "Malformed cyclone snapshot": "Snapshot dei cicloni non valido",
   "Cyclone request timed out": "La richiesta dei cicloni è andata in timeout",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "refine the filter to see more": "refine the filter to see more",
   "ClimateViewer ({count})": "ClimateViewer ({count})"
 }

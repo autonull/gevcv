@@ -437,11 +437,13 @@ export class LayerPanel {
 
   /**
    * ClimateViewer carries hundreds of layers; render them behind one collapsed
-   * section with a filter, and build row DOM only when it is opened.
+   * section. Search runs over catalogue data, and rows stream in chunks so a
+   * 405-row result does not block the first paint.
    */
   _renderClimateViewerRows(layers, generation) {
     const details = document.createElement('details');
     details.className = 'data-cv-section';
+    details.open = this._climateViewerOpen === true;
     const summary = document.createElement('summary');
     summary.className = 'data-layer-group-heading';
     summary.textContent = t('ClimateViewer ({count})', {
@@ -451,53 +453,115 @@ export class LayerPanel {
 
     const body = document.createElement('div');
     body.className = 'data-cv-body';
+    const toolbar = document.createElement('div');
+    toolbar.className = 'data-cv-toolbar';
     const filter = document.createElement('input');
     filter.type = 'search';
     filter.className = 'data-cv-filter';
     filter.placeholder = msg('Filter ClimateViewer layers');
     filter.setAttribute('aria-label', msg('Filter ClimateViewer layers'));
+    const count = document.createElement('span');
+    count.className = 'data-cv-count';
+    count.setAttribute('aria-live', 'polite');
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'data-cv-clear';
+    clear.textContent = t('Clear');
+    toolbar.append(filter, count, clear);
+
+    const legend = document.createElement('div');
+    legend.className = 'data-cv-legend';
+    legend.setAttribute('aria-hidden', 'true');
+    for (const badge of ['large', 'time', 'proxy', 'base', 'key', 'health']) {
+      const chip = document.createElement('span');
+      chip.className = `data-cv-badge data-cv-badge-${badge}`;
+      chip.textContent = {
+        large: 'L',
+        time: 'T',
+        proxy: 'P',
+        base: 'B',
+        key: 'K',
+        health: 'H',
+      }[badge];
+      legend.appendChild(chip);
+    }
+
     const list = document.createElement('div');
     list.className = 'data-cv-list';
-    body.appendChild(filter);
-    body.appendChild(list);
+    body.append(toolbar, legend, list);
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
 
+    let renderToken = 0;
+    let scheduled = null;
+    const cancel = () => {
+      renderToken += 1;
+      if (scheduled !== null) {
+        if (typeof cancelAnimationFrame === 'function')
+          cancelAnimationFrame(scheduled);
+        else clearTimeout(scheduled);
+        scheduled = null;
+      }
+    };
+    const schedule = (callback) => {
+      if (typeof requestAnimationFrame === 'function')
+        scheduled = requestAnimationFrame(callback);
+      else scheduled = setTimeout(callback, 0);
+    };
+    const matchesFor = (query) => {
+      const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+      if (!tokens.length) return layers;
+      return layers.filter((layer) => {
+        const haystack = [
+          layer.name,
+          layer.id,
+          layer.metadata?.cvId,
+          layer.metadata?.category,
+          layer.metadata?.sourceUrl,
+          layer.metadata?.description,
+          layer.family,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
+      });
+    };
     const renderList = () => {
-      const query = filter.value.trim().toLowerCase();
-      const matches = layers.filter(
-        (layer) =>
-          !query ||
-          layer.name.toLowerCase().includes(query) ||
-          layer.id.includes(query) ||
-          (layer.metadata?.category ?? '').toLowerCase().includes(query),
-      );
+      cancel();
+      const token = renderToken;
+      const matches = matchesFor(filter.value.trim());
+      count.textContent = `${matches.length} / ${layers.length}`;
+      const enabled = layers.filter((layer) => this.isEnabled(layer.id)).length;
+      clear.hidden = enabled === 0;
       list.textContent = '';
-      const shown = matches.slice(0, 80);
+      if (!matches.length) return;
+      let index = 0;
       let previousCategory = '';
-      for (const layer of shown) {
-        const category = layer.metadata?.category ?? '';
-        if (category !== previousCategory) {
-          const heading = document.createElement('div');
-          heading.className = 'data-cv-category';
-          heading.textContent = category;
-          list.appendChild(heading);
-          previousCategory = category;
+      const paint = () => {
+        if (token !== renderToken) return;
+        const stop = Math.min(index + 48, matches.length);
+        for (; index < stop; index += 1) {
+          const layer = matches[index];
+          const category = layer.metadata?.category ?? '';
+          if (category !== previousCategory) {
+            const heading = document.createElement('div');
+            heading.className = 'data-cv-category';
+            heading.textContent = category;
+            list.appendChild(heading);
+            previousCategory = category;
+          }
+          list.appendChild(this._createClimateViewerRow(layer, generation));
         }
-        list.appendChild(this._createClimateViewerRow(layer, generation));
-      }
-      if (matches.length > shown.length) {
-        const note = document.createElement('div');
-        note.className = 'data-cv-note';
-        note.textContent = `${shown.length} / ${matches.length} — ${msg(
-          'refine the filter to see more',
-        )}`;
-        list.appendChild(note);
-      }
+        scheduled = null;
+        if (index < matches.length) schedule(paint);
+      };
+      paint();
     };
 
     let rendered = false;
     const onToggle = () => {
+      this._climateViewerOpen = details.open;
       if (!details.open || rendered) return;
       rendered = true;
       renderList();
@@ -506,6 +570,49 @@ export class LayerPanel {
     this._bind(filter, 'input', () => {
       if (rendered) renderList();
     });
+    this._bind(filter, 'keydown', (event) => {
+      if (event.key !== 'ArrowDown') return;
+      const first = list.querySelector('.data-toggle-btn');
+      if (first) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    this._bind(clear, 'click', async () => {
+      if (this._clearingClimateViewer) return;
+      this._clearingClimateViewer = true;
+      clear.disabled = true;
+      try {
+        for (const layer of layers) {
+          if (this.isEnabled(layer.id))
+            await this.setEnabled(layer.id, false, { origin: 'user' });
+        }
+      } finally {
+        this._clearingClimateViewer = false;
+        clear.disabled = false;
+        if (!this._destroyed && this._generation === generation) renderList();
+      }
+    });
+    const ownerDocument = details.ownerDocument;
+    if (ownerDocument) {
+      this._bind(ownerDocument, 'keydown', (event) => {
+        if (event.key !== '/' || !details.open || !details.isConnected) return;
+        const target = event.target;
+        const tag = target?.tagName?.toLowerCase?.() ?? '';
+        if (
+          ['input', 'textarea', 'select'].includes(tag) ||
+          target?.isContentEditable
+        )
+          return;
+        event.preventDefault();
+        filter.focus();
+        filter.select?.();
+      });
+    }
+    if (details.open) {
+      rendered = true;
+      renderList();
+    }
   }
 
   _createClimateViewerRow(layer, generation) {
@@ -525,8 +632,13 @@ export class LayerPanel {
     const name = document.createElement('span');
     name.className = 'data-name';
     name.textContent = layer.name;
-    left.appendChild(icon);
-    left.appendChild(name);
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'data-cv-info';
+    info.textContent = 'i';
+    info.setAttribute('aria-label', t('Details'));
+    info.setAttribute('aria-expanded', 'false');
+    left.append(icon, name, info);
 
     const right = document.createElement('div');
     right.className = 'data-toggle-right';
@@ -534,6 +646,7 @@ export class LayerPanel {
       const chip = document.createElement('span');
       chip.className = `data-cv-badge data-cv-badge-${badge.kind}`;
       chip.textContent = badge.label;
+      chip.setAttribute('aria-label', badge.label);
       right.appendChild(chip);
     }
     const toggle = document.createElement('button');
@@ -577,6 +690,57 @@ export class LayerPanel {
     meta.className = 'data-toggle-meta';
     meta.textContent = layer.metadata?.sourceUrl || layer.family || '';
     row.appendChild(meta);
+
+    const drawer = document.createElement('div');
+    drawer.className = 'data-cv-drawer';
+    drawer.hidden = true;
+    let filled = false;
+    const fill = () => {
+      if (filled) return;
+      filled = true;
+      const metadata = layer.metadata ?? {};
+      const add = (text, className = '') => {
+        const line = document.createElement('div');
+        line.className = `data-cv-drawer-line ${className}`.trim();
+        line.textContent = text;
+        drawer.appendChild(line);
+      };
+      if (metadata.description) add(metadata.description);
+      if (metadata.health) {
+        add(
+          `${metadata.health.status}${
+            metadata.health.http ? ` · HTTP ${metadata.health.http}` : ''
+          }`,
+          'data-cv-drawer-health',
+        );
+      }
+      if (metadata.sourceUrl) {
+        try {
+          const link = document.createElement('a');
+          link.href = metadata.sourceUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = t('Source');
+          drawer.appendChild(link);
+        } catch {
+          add(metadata.sourceUrl);
+        }
+      }
+      if (metadata.providerUrl) add(metadata.providerUrl, 'data-keep');
+      const parts = [`cvId: ${metadata.cvId ?? '—'}`];
+      if (metadata.sublayers?.length)
+        parts.push(`sublayers: ${metadata.sublayers.join(', ')}`);
+      add(parts.join(' · '));
+      if (layer.stats?.error) add(layer.stats.error, 'data-cv-drawer-error');
+      if (layer.stats?.remedy) add(layer.stats.remedy, 'data-cv-drawer-remedy');
+    };
+    this._bind(info, 'click', () => {
+      const open = drawer.hidden;
+      drawer.hidden = !open;
+      info.setAttribute('aria-expanded', String(open));
+      if (open) fill();
+    });
+    row.appendChild(drawer);
     return row;
   }
 
@@ -589,6 +753,9 @@ export class LayerPanel {
     if (layer.metadata?.role === 'basemap')
       badges.push({ kind: 'base', label: 'B' });
     if (layer.keyRequired) badges.push({ kind: 'key', label: 'K' });
+    const health = layer.metadata?.health?.status;
+    if (health && health !== 'ok')
+      badges.push({ kind: `health health-${health}`, label: 'H' });
     return badges;
   }
 

@@ -2858,6 +2858,5 @@
   "Malformed cyclone snapshot": "サイクロンのスナップショットの形式が不正です",
   "Cyclone request timed out": "サイクロンのリクエストがタイムアウトしました",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
-  "refine the filter to see more": "refine the filter to see more",
   "ClimateViewer ({count})": "ClimateViewer ({count})"
 }
