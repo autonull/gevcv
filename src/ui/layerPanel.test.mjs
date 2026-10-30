@@ -662,6 +662,66 @@ test('ClimateViewer refreshes its global enabled counter and confirms large bulk
   }
 });
 
+test('ClimateViewer rows show a busy state and surface toggle failures', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  const previousWarn = console.warn;
+  globalThis.document = f.document;
+  console.warn = () => {};
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  let rejectToggle;
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: () =>
+      new Promise((resolve, reject) => {
+        rejectToggle = reject;
+      }),
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    const filter = byClass('data-cv-filter');
+    filter.value = 'usgs-all-hour';
+    filter.dispatchEvent(new Event('input'));
+    const toggle = byClass('data-toggle-btn');
+    toggle.click();
+    assert.equal(toggle.getAttribute('aria-busy'), 'true');
+    assert.equal(toggle.classList.contains('transitioning'), true);
+
+    rejectToggle(new Error('boom'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const row = f.find((node) => node.dataset.layerId === id);
+    assert.equal(row.classList.contains('data-cv-row-error'), true);
+    assert.equal(
+      row.querySelector('.data-toggle-meta').textContent,
+      'Error: boom',
+    );
+    assert.equal(toggle.getAttribute('aria-busy'), 'false');
+  } finally {
+    panel.destroy();
+    console.warn = previousWarn;
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

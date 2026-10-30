@@ -178,6 +178,10 @@
   border-bottom: 1px solid rgb(255 255 255 / 6%);
 }
 
+.data-cv-row-error .data-toggle-meta {
+  color: #ff8f8f;
+}
+
 .data-cv-row:nth-child(even) {
   background: rgb(255 255 255 / 2%);
 }

@@ -108,6 +108,12 @@ export function railFixture(onWrite = () => {}) {
       });
       node.classList = {
         contains: (name) => node.className?.split(' ').includes(name) || false,
+        add(...names) {
+          for (const name of names) node.classList.toggle(name, true);
+        },
+        remove(...names) {
+          for (const name of names) node.classList.toggle(name, false);
+        },
         toggle(name, enabled) {
           const classes = new Set(
             (node.className || '').split(' ').filter(Boolean),

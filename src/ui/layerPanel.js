@@ -1024,12 +1024,8 @@ export class LayerPanel {
     }
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = `data-toggle-btn${this.isEnabled(layer.id) ? ' active' : ''}`;
-    toggle.setAttribute(
-      'aria-pressed',
-      this.isEnabled(layer.id) ? 'true' : 'false',
-    );
-    toggle.textContent = t(this.isEnabled(layer.id) ? 'ON' : 'OFF');
+    toggle.className = 'data-toggle-btn';
+    this._syncToggleButton(toggle, layer);
     this._bind(toggle, 'click', async () => {
       if (
         this._destroyed ||
@@ -1038,20 +1034,31 @@ export class LayerPanel {
       )
         return;
       toggle.setAttribute('aria-disabled', 'true');
+      toggle.setAttribute('aria-busy', 'true');
+      toggle.classList.add('transitioning');
+      let failure = null;
       try {
         await this.setEnabled(layer.id, !this.isEnabled(layer.id), {
           origin: 'user',
         });
       } catch (error) {
+        failure = error;
         console.warn(`[Data] ${layer.id} toggle error:`, error);
       } finally {
         const live = this.getAll().find(({ id }) => id === layer.id);
         if (!this._destroyed && this._generation === generation && live) {
-          toggle.classList.toggle('active', Boolean(live.enabled));
-          toggle.textContent = t(live.enabled ? 'ON' : 'OFF');
-          toggle.setAttribute('aria-pressed', live.enabled ? 'true' : 'false');
+          this._syncToggleButton(toggle, live);
+        } else {
+          toggle.classList.remove('transitioning');
+          toggle.setAttribute('aria-busy', 'false');
         }
         toggle.removeAttribute('aria-disabled');
+        if (failure && !this._destroyed && this._generation === generation) {
+          row.classList.add('data-cv-row-error');
+          meta.textContent = t('Error: {message}', {
+            message: failure.message || failure,
+          });
+        }
         this._climateViewerFolderSync?.();
         this._climateViewerBulkSync?.();
       }
@@ -1063,7 +1070,7 @@ export class LayerPanel {
 
     const meta = document.createElement('div');
     meta.className = 'data-toggle-meta';
-    meta.textContent = layer.metadata?.sourceUrl || layer.family || '';
+    setRowText(meta, this._buildMetaText(layer));
     row.appendChild(meta);
 
     const drawer = document.createElement('div');
