@@ -85,6 +85,15 @@ export function railFixture(onWrite = () => {}) {
           );
         },
       });
+      Object.defineProperty(node, 'innerHTML', {
+        get() {
+          return '';
+        },
+        set(value) {
+          onWrite('innerHTML');
+          if (value === '') node.children.length = 0;
+        },
+      });
       node.classList = {
         contains: (name) => node.className?.split(' ').includes(name) || false,
         toggle(name, enabled) {

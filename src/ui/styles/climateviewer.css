@@ -52,6 +52,37 @@
   background: var(--panel-bg, #0b0f14);
 }
 
+.data-cv-recents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 3px 4px 0;
+}
+
+.data-cv-recents[hidden] {
+  display: none;
+}
+
+.data-cv-recent {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 5px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 9px;
+  opacity: 0.7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.data-cv-recent:hover {
+  opacity: 1;
+}
+
 .data-cv-folder-row {
   display: flex;
   align-items: center;

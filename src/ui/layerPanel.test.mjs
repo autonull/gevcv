@@ -408,6 +408,66 @@ test('the ClimateViewer panel renders a collapsible folder tree with folder togg
   }
 });
 
+test('ClimateViewer search opens the first result, remembers it, and survives a rebuild', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const ids = ['cv-live-usgs-all-hour', 'cv-live-usgs-45-today'];
+  const layers = ids.map((id) => ({
+    id,
+    name: catalog.layers[id].name,
+    icon: '*',
+    enabled: false,
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    metadata: catalog.layers[id],
+    stats: {},
+  }));
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (id) => layers.find((layer) => layer.id === id)?.enabled,
+    setEnabled: async (id, value) => {
+      const layer = layers.find((entry) => entry.id === id);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  const fire = (node, type, props = {}) => {
+    const event = new Event(type);
+    for (const [key, value] of Object.entries(props))
+      Object.defineProperty(event, key, { value });
+    node.dispatchEvent(event);
+    return event;
+  };
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    let filter = byClass('data-cv-filter');
+    filter.value = 'usgs';
+    fire(filter, 'input');
+    const first = byClass('data-cv-row');
+    fire(filter, 'keydown', { key: 'Enter' });
+    assert.equal(first.querySelector('.data-cv-drawer').hidden, false);
+    assert.equal(
+      first.querySelector('.data-cv-info').getAttribute('aria-expanded'),
+      'true',
+    );
+    const recent = byClass('data-cv-recent');
+    assert.equal(recent.textContent, 'usgs');
+
+    panel._renderToggles();
+    filter = byClass('data-cv-filter');
+    assert.equal(filter.value, 'usgs');
+    assert.equal(byClass('data-cv-recent').textContent, 'usgs');
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

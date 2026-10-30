@@ -499,7 +499,7 @@ export class LayerPanel {
     toolbar.className = 'data-cv-toolbar';
     const filter = document.createElement('input');
     filter.type = 'search';
-    filter.value = '';
+    filter.value = this._climateViewerQuery ?? '';
     filter.className = 'data-cv-filter';
     filter.placeholder = msg('Filter ClimateViewer layers');
     filter.setAttribute('aria-label', msg('Filter ClimateViewer layers'));
@@ -539,6 +539,10 @@ export class LayerPanel {
       packBar.appendChild(button);
     }
 
+    const recents = document.createElement('div');
+    recents.className = 'data-cv-recents';
+    recents.hidden = true;
+
     const legend = document.createElement('div');
     legend.className = 'data-cv-legend';
     legend.setAttribute('aria-hidden', 'true');
@@ -558,7 +562,7 @@ export class LayerPanel {
 
     const list = document.createElement('div');
     list.className = 'data-cv-list';
-    body.append(packBar, toolbar, legend, list);
+    body.append(packBar, toolbar, recents, legend, list);
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
 
@@ -696,11 +700,42 @@ export class LayerPanel {
       rendered = true;
       renderList();
     };
+    const renderRecents = () => {
+      recents.textContent = '';
+      const recent = this._recentClimateViewerSearches();
+      recents.hidden = recent.length === 0;
+      for (const query of recent) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'data-cv-recent';
+        chip.textContent = query;
+        chip.setAttribute('aria-label', query);
+        this._bind(chip, 'click', () => {
+          filter.value = query;
+          this._climateViewerQuery = query;
+          filter.focus?.();
+          renderList();
+        });
+        recents.appendChild(chip);
+      }
+    };
     this._bind(details, 'toggle', onToggle);
     this._bind(filter, 'input', () => {
+      this._climateViewerQuery = filter.value;
       if (rendered) renderList();
     });
     this._bind(filter, 'keydown', (event) => {
+      if (event.key === 'Enter' && filter.value.trim()) {
+        event.preventDefault();
+        this._rememberClimateViewerSearch(filter.value);
+        this._climateViewerQuery = filter.value;
+        renderRecents();
+        const row = list.querySelector('.data-cv-row');
+        const info = row?.querySelector?.('.data-cv-info');
+        if (info) info.click();
+        else row?.scrollIntoView?.({ block: 'center' });
+        return;
+      }
       if (event.key !== 'ArrowDown') return;
       const first = list.querySelector('.data-toggle-btn');
       if (first) {
@@ -733,6 +768,7 @@ export class LayerPanel {
         if (copyAtlas.isConnected) copyAtlas.textContent = msg('MD');
       }, 1500);
     });
+    renderRecents();
     this._climateViewerControls = { details, filter, list, renderList };
     const ownerDocument = details.ownerDocument;
     if (typeof ownerDocument?.addEventListener === 'function') {
@@ -771,6 +807,47 @@ export class LayerPanel {
     await Promise.allSettled(operations);
   }
 
+  _recentClimateViewerSearches() {
+    if (Array.isArray(this._cvRecentSearches)) return this._cvRecentSearches;
+    let stored = [];
+    try {
+      const raw = globalThis.window?.localStorage?.getItem(
+        'gevcv.climateviewer.recentSearches',
+      );
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        stored = parsed.filter(
+          (query) => typeof query === 'string' && query.trim(),
+        );
+      }
+    } catch {
+      stored = [];
+    }
+    this._cvRecentSearches = stored.slice(0, 5);
+    return this._cvRecentSearches;
+  }
+
+  _rememberClimateViewerSearch(query) {
+    const value = String(query ?? '').trim();
+    if (!value) return;
+    const previous = this._recentClimateViewerSearches();
+    const next = [
+      value,
+      ...previous.filter(
+        (entry) => entry.toLowerCase() !== value.toLowerCase(),
+      ),
+    ].slice(0, 5);
+    this._cvRecentSearches = next;
+    try {
+      globalThis.window?.localStorage?.setItem(
+        'gevcv.climateviewer.recentSearches',
+        JSON.stringify(next),
+      );
+    } catch {
+      /* memory-only when storage is unavailable */
+    }
+  }
+
   /** `?layer=<id>`: enable, open the CV section and drawer, and fly there. */
   async openClimateViewerLayer(id) {
     const layer = this.getAll().find((entry) => entry.id === id);
@@ -788,6 +865,7 @@ export class LayerPanel {
     requestAnimationFrame(() => {
       const controls = this._climateViewerControls;
       if (!controls) return;
+      this._climateViewerQuery = id;
       controls.filter.value = id;
       controls.renderList();
       requestAnimationFrame(() => {
