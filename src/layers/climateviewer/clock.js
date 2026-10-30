@@ -13,6 +13,8 @@ export function createClimateViewerClock({ now = () => new Date() } = {}) {
 
   const getDate = () => new Date(day);
   const isoDate = () => new Date(day).toISOString().slice(0, 10);
+  const today = () =>
+    new Date(startOfDay(now().getTime())).toISOString().slice(0, 10);
 
   function setDate(value) {
     const next = startOfDay(new Date(value).getTime());
@@ -29,6 +31,7 @@ export function createClimateViewerClock({ now = () => new Date() } = {}) {
   return {
     getDate,
     isoDate,
+    today,
     setDate,
     step,
     subscribe(listener) {

@@ -574,6 +574,18 @@ export class LayerPanel {
     const clockBar = document.createElement('div');
     clockBar.className = 'data-cv-clock';
     clockBar.hidden = true;
+    const timelineBar = document.createElement('div');
+    timelineBar.className = 'data-cv-timeline';
+    timelineBar.hidden = true;
+    const timelineLabel = document.createElement('span');
+    timelineLabel.className = 'data-cv-timeline-label';
+    timelineLabel.textContent = t('Timeline');
+    const timelinePreview = document.createElement('span');
+    timelinePreview.className = 'data-cv-timeline-preview';
+    timelinePreview.setAttribute('aria-live', 'polite');
+    const timelineStrip = document.createElement('div');
+    timelineStrip.className = 'data-cv-timeline-strip';
+    timelineBar.append(timelineLabel, timelinePreview, timelineStrip);
 
     const legend = document.createElement('div');
     legend.className = 'data-cv-legend';
@@ -594,7 +606,16 @@ export class LayerPanel {
 
     const list = document.createElement('div');
     list.className = 'data-cv-list';
-    body.append(packBar, toolbar, recents, healthBar, clockBar, legend, list);
+    body.append(
+      packBar,
+      toolbar,
+      recents,
+      healthBar,
+      clockBar,
+      timelineBar,
+      legend,
+      list,
+    );
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
 
@@ -840,6 +861,50 @@ export class LayerPanel {
       for (const node of this._climateViewerDayNodes ?? [])
         node.textContent = day;
     };
+    const timelineDays = new Map();
+    let timelineBuilt = false;
+    const buildTimeline = () => {
+      if (!clock || timelineBuilt) return;
+      timelineBuilt = true;
+      const end = new Date(`${clock.today()}T00:00:00Z`);
+      for (let offset = 29; offset >= 0; offset -= 1) {
+        const date = new Date(end.getTime());
+        date.setUTCDate(end.getUTCDate() - offset);
+        const iso = date.toISOString().slice(0, 10);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'data-cv-timeline-day';
+        button.dataset.day = iso;
+        button.setAttribute('aria-label', iso);
+        this._bind(button, 'mouseenter', () => {
+          timelinePreview.textContent = iso;
+        });
+        this._bind(button, 'focus', () => {
+          timelinePreview.textContent = iso;
+        });
+        this._bind(button, 'mouseleave', () => {
+          timelinePreview.textContent = clock.isoDate();
+        });
+        this._bind(button, 'blur', () => {
+          timelinePreview.textContent = clock.isoDate();
+        });
+        this._bind(button, 'click', () => clock.setDate(iso));
+        timelineDays.set(iso, button);
+        timelineStrip.appendChild(button);
+      }
+    };
+    const updateTimeline = () => {
+      const anyTimeline = layers.some(
+        (layer) => layer.metadata?.flags?.timeline && this.isEnabled(layer.id),
+      );
+      timelineBar.hidden = !clock || !anyTimeline;
+      if (timelineBar.hidden) return;
+      buildTimeline();
+      const day = clock.isoDate();
+      for (const [iso, button] of timelineDays)
+        button.classList.toggle('active', iso === day);
+      timelinePreview.textContent = day;
+    };
     const renderClock = () => {
       const anyEnabled = layers.some(
         (layer) =>
@@ -847,6 +912,7 @@ export class LayerPanel {
       );
       clockBar.hidden = !clock || !anyEnabled;
       if (clockBar.hidden) {
+        timelineBar.hidden = true;
         stopPlay();
         return;
       }
@@ -856,6 +922,7 @@ export class LayerPanel {
         'aria-pressed',
         this._climateViewerClockPlaying ? 'true' : 'false',
       );
+      updateTimeline();
     };
     this._climateViewerClockSync = renderClock;
     this._bind(previousDay, 'click', () => clock?.step(-1));

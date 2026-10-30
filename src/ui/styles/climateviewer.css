@@ -165,6 +165,65 @@
     monospace;
 }
 
+.data-cv-timeline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 0;
+}
+
+.data-cv-timeline[hidden] {
+  display: none;
+}
+
+.data-cv-timeline-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.data-cv-timeline-preview {
+  margin-left: auto;
+  color: #8fc8ff;
+  font:
+    9px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.data-cv-timeline-strip {
+  display: flex;
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.data-cv-timeline-day {
+  flex: 1 0 7px;
+  min-width: 7px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 8%);
+  cursor: pointer;
+}
+
+.data-cv-timeline-day:hover,
+.data-cv-timeline-day:focus-visible {
+  border-color: rgb(143 200 255 / 80%);
+}
+
+.data-cv-timeline-day.active {
+  border-color: #8fc8ff;
+  background: #8fc8ff;
+}
+
 .data-cv-folder-row {
   display: flex;
   align-items: center;
@@ -460,6 +519,7 @@
   body.climateviewer-sheet-open .data-cv-health-chip,
   body.climateviewer-sheet-open .data-cv-clock button,
   body.climateviewer-sheet-open .data-cv-date,
+  body.climateviewer-sheet-open .data-cv-timeline-day,
   body.climateviewer-sheet-open .data-cv-folder-row,
   body.climateviewer-sheet-open .data-cv-drawer-actions button {
     min-height: 44px;

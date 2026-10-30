@@ -822,9 +822,23 @@ test('ClimateViewer clock surface follows the shared day and labels time rows', 
     filter.dispatchEvent(new Event('input'));
     const row = f.find((node) => node.dataset.layerId === id);
     assert.equal(row.querySelector('.data-cv-day').textContent, '2026-01-02');
+    assert.equal(byClass('data-cv-timeline').hidden, false);
+    assert.equal(clock.today(), '2026-01-02');
+    assert.equal(
+      f
+        .find((node) => node.dataset.day === '2026-01-02')
+        .classList.contains('active'),
+      true,
+    );
+    const earliest = f.find((node) => node.dataset.day === '2025-12-04');
+    assert.ok(earliest);
+    earliest.dispatchEvent(new Event('mouseenter'));
+    assert.equal(byClass('data-cv-timeline-preview').textContent, '2025-12-04');
+    earliest.click();
+    assert.equal(clock.isoDate(), '2025-12-04');
     byClass('data-cv-day-next').click();
-    assert.equal(clock.isoDate(), '2026-01-03');
-    assert.equal(row.querySelector('.data-cv-day').textContent, '2026-01-03');
+    assert.equal(clock.isoDate(), '2025-12-05');
+    assert.equal(row.querySelector('.data-cv-day').textContent, '2025-12-05');
   } finally {
     panel.destroy();
     clock.destroy();
