@@ -51,6 +51,21 @@ const IMAGERY_FAMILIES = new Set([
   'bing',
 ]);
 
+/** Dynamic vector feeds worth a background refetch. Offline files stay put. */
+const LIVE_REFRESH_INTERVAL_MS = 60_000;
+const LIVE_PROVIDER = /\b(USGS|NOAA|NWS|EMSC|PDC)\b/i;
+
+export function climateViewerRefreshInterval(definition) {
+  if (definition?.role !== 'overlay') return 0;
+  if (!['kml', 'geojson'].includes(definition.family)) return 0;
+  const haystack = [
+    definition.name,
+    definition.cvId,
+    definition.category?.join(' '),
+  ].join(' ');
+  return LIVE_PROVIDER.test(haystack) ? LIVE_REFRESH_INTERVAL_MS : 0;
+}
+
 export function getClimateViewerLayer(id) {
   return catalog.layers[id] ?? null;
 }
@@ -106,6 +121,7 @@ export function createClimateViewerLayer(
     providerFor,
     createImagery,
   });
+  const refreshInterval = climateViewerRefreshInterval(definition);
   let viewer = null;
   let enabled = false;
   let destroyed = false;
@@ -116,6 +132,7 @@ export function createClimateViewerLayer(
     icon: ICONS[definition.family] ?? '🗺️',
     source: 'ClimateViewer',
     updateInterval: 0,
+    refreshInterval,
     showInTogglePanel: true,
     panelGroup: 'ClimateViewer',
     category: definition.category.join(' › '),
@@ -145,8 +162,11 @@ export function createClimateViewerLayer(
     async update() {
       if (!enabled || !viewer) return false;
       const { status } = family.stats();
-      if (status === 'ok' || status === 'empty' || status === 'loading')
+      if (status === 'ok' || status === 'empty') {
+        if (refreshInterval > 0) return family.refresh?.() ?? true;
         return true;
+      }
+      if (status === 'loading') return true;
       return family.attach(viewer);
     },
 

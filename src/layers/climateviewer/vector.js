@@ -32,6 +32,16 @@ function trimEntities(dataSource, cap) {
   return cap;
 }
 
+/** Cluster dense point layers; line and polygon layers keep their geometry. */
+function applyDensePointClustering(dataSource, layer) {
+  if (!dataSource.clustering) return;
+  const dense = layer.flags.large || dataSource.entities.values.length > 2_000;
+  if (!dense) return;
+  dataSource.clustering.enabled = true;
+  dataSource.clustering.pixelRange = 32;
+  dataSource.clustering.minimumClusterSize = 2;
+}
+
 /**
  * Load one KML/KMZ or GeoJSON layer through Cesium's own loaders, which cover
  * KMZ inflation, geometry types, styles and NetworkLinks.
@@ -52,11 +62,20 @@ export async function loadVectorDataSource(
     });
     signal?.throwIfAborted();
     applyMarkerOverrides(dataSource, layer, resolveAsset);
+    if (layer.flags.large) trimEntities(dataSource, LARGE_LAYER_ENTITY_CAP);
+    applyDensePointClustering(dataSource, layer);
     return dataSource;
   }
 
   if (layer.family === 'geojson') {
-    const dataSource = await Cesium.GeoJsonDataSource.load(layer.url, {
+    const source =
+      proxyUrl && !layer.url.startsWith('/cv/')
+        ? new Cesium.Resource({
+            url: layer.url,
+            proxy: new Cesium.DefaultProxy(proxyUrl),
+          })
+        : layer.url;
+    const dataSource = await Cesium.GeoJsonDataSource.load(source, {
       clampToGround: true,
       ...(layer.markerIcon && markerImage(layer, resolveAsset)
         ? { markerSymbol: markerImage(layer, resolveAsset) }
@@ -65,6 +84,7 @@ export async function loadVectorDataSource(
     signal?.throwIfAborted();
     applyMarkerOverrides(dataSource, layer, resolveAsset);
     if (layer.flags.large) trimEntities(dataSource, LARGE_LAYER_ENTITY_CAP);
+    applyDensePointClustering(dataSource, layer);
     return dataSource;
   }
 
@@ -79,9 +99,14 @@ export function readAnalystRecords(dataSource, maxCount = 2000) {
   for (const entity of dataSource.entities.values) {
     if (records.length >= limit) break;
     const position = entity.position?.getValue?.(Cesium.JulianDate.now());
+    const description =
+      entity.description?.getValue?.(Cesium.JulianDate.now()) ??
+      entity.properties?.S?.getValue?.() ??
+      '';
     records.push({
       id: entity.id ?? null,
       name: String(entity.name ?? entity.properties?.N?.getValue?.() ?? ''),
+      description: String(description).slice(0, 600),
       geometry: position
         ? {
             lat: Cesium.Math.toDegrees(

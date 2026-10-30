@@ -1934,6 +1934,7 @@
       "./standalone/catalog"
     ],
     "modules": [
+      "src/layers/climateviewer/settings.js",
       "src/layers/climateviewer/assets.js",
       "src/layers/climateviewer/clock.js",
       "src/layers/climateviewer/health.js",
@@ -2853,6 +2854,7 @@
   "application-layer-construction": {
     "exports": ["./application/layers"],
     "modules": [
+      "src/layers/climateviewer/settings.js",
       "src/layers/climateviewer/catalog.json",
       "src/layers/climateviewer/assets.js",
       "src/layers/climateviewer/clock.js",

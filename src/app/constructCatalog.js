@@ -5,6 +5,7 @@ import {
   createClimateViewerClock,
   createClimateViewerLayers,
 } from '../layers/climateviewer/index.js';
+import { readClimateViewerProxyUrl } from '../layers/climateviewer/settings.js';
 import { createWeatherLayer } from '../layers/weather/index.js';
 import { createCyclonesLayer } from '../layers/cyclones/index.js';
 import { createWindLayer } from '../layers/wind/index.js';
@@ -191,6 +192,7 @@ export function createApplicationCatalog({
         ...createClimateViewerLayers({
           clock: climateViewerClock,
           resolveAsset,
+          proxyUrl: readClimateViewerProxyUrl(),
         }),
         createApplicationCables({ source: sources.cables }),
         createApplicationFirms({

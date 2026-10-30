@@ -22,6 +22,7 @@ export function createImageryFamily(
   let unsubscribeClock = null;
   let status = 'idle';
   let error = null;
+  let remedy = null;
   let lastUpdate = null;
 
   const timeParameter = () => (timeEnabled && clock ? clock.isoDate() : null);
@@ -47,6 +48,7 @@ export function createImageryFamily(
       viewer.imageryLayers.add(imageryLayer);
       status = 'ok';
       error = null;
+      remedy = null;
       lastUpdate = Date.now();
       subscribeClock();
       return true;
@@ -54,6 +56,7 @@ export function createImageryFamily(
       const described = describeLoadFailure(failure);
       status = described.status;
       error = described.message;
+      remedy = described.remedy ?? null;
       console.warn(`[ClimateViewer] ${definition.id}: ${described.message}`);
       return false;
     }
@@ -93,6 +96,7 @@ export function createImageryFamily(
       count: imageryLayer ? 1 : 0,
       lastUpdate,
       error,
+      remedy,
       status,
     }),
   };

@@ -21,6 +21,7 @@ export function createVectorFamily(
   let generation = 0;
   let status = 'idle';
   let error = null;
+  let remedy = null;
   let count = 0;
   let lastUpdate = null;
 
@@ -52,12 +53,14 @@ export function createVectorFamily(
       lastUpdate = Date.now();
       status = count > 0 ? 'ok' : 'empty';
       error = null;
+      remedy = null;
       return true;
     } catch (failure) {
       if (signal.aborted || epoch !== generation) return false;
       const described = describeLoadFailure(failure);
       status = described.status;
       error = described.message;
+      remedy = described.remedy ?? null;
       console.warn(`[ClimateViewer] ${definition.id}: ${described.message}`);
       return false;
     }
@@ -76,6 +79,7 @@ export function createVectorFamily(
     lastUpdate = null;
     status = 'idle';
     error = null;
+    remedy = null;
   }
 
   async function refresh() {
@@ -106,6 +110,6 @@ export function createVectorFamily(
     refresh,
     zoomTo,
     records: (max) => (dataSource ? readAnalystRecords(dataSource, max) : []),
-    stats: () => ({ count, lastUpdate, error, status }),
+    stats: () => ({ count, lastUpdate, error, remedy, status }),
   };
 }

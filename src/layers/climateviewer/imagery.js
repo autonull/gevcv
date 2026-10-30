@@ -67,10 +67,19 @@ export function createImageryProvider(layer, { time = null } = {}) {
 /** Classify a failed provider/data-source load for the UI and health report. */
 export function describeLoadFailure(error) {
   if (error instanceof ClimateViewerKeyRequiredError)
-    return { status: 'key-required', message: error.message };
+    return {
+      status: 'key-required',
+      message: error.message,
+      remedy: 'Add a Cesium Ion token to use this Bing imagery set.',
+    };
   const message = String(error?.message || error || 'load failed');
   if (/fetch|network|cors|failed to load|blocked/i.test(message))
-    return { status: 'cors', message };
+    return {
+      status: 'cors',
+      message,
+      remedy:
+        'The provider blocks browser requests. Set a ClimateViewer proxy URL in settings to route it.',
+    };
   if (/40[34]/i.test(message)) return { status: 'dead', message };
   return { status: 'error', message };
 }
