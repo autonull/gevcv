@@ -30,7 +30,8 @@ test('all four packs are non-empty and reference catalog layers', () => {
   assert.equal(STARTER_PACK_ID, 'disaster-watch');
   assert.deepEqual(
     starterClimateViewerLayerIds(),
-    getClimateViewerPack('disaster-watch').layers,
+    [],
+    'startup must not auto-enable a CV pack',
   );
 });
 

@@ -122,7 +122,9 @@ export function applicationViewerOptions(creditContainer) {
     // which would also stop CesiumWidget from creating the Sun and Moon.
     skyBox: new StarrySky(),
     creditContainer,
-    msaaSamples: 4,
+    // Functional default: 2× MSAA keeps markers legible without the 4× GPU
+    // cost on battery-powered disaster-response machines.
+    msaaSamples: 2,
     contextOptions: { webgl: { preserveDrawingBuffer: true } },
   };
 }
@@ -136,7 +138,15 @@ export function createApplicationViewer({ container, creditContainer }) {
     applicationViewerOptions(creditContainer),
   );
   try {
-    viewer.targetFrameRate = 60;
+    // Idle frames are already governed by requestRenderMode. While something
+    // animates, 30 fps is the functional budget: half the GPU/CPU of 60 fps
+    // with no loss of map-readability.
+    viewer.targetFrameRate = 30;
+    // Fewer globe tiles at city/regional zoom; higher values trade crispness
+    // for battery. Visual presets can raise it back.
+    viewer.scene.globe.maximumScreenSpaceError = 3;
+    // Fog is decorative atmosphere, not map information. Presets may enable it.
+    viewer.scene.fog.enabled = false;
     // A phone pinch spans fewer screen pixels than desktop zoom gestures.
     // Keep Cesium's distance-aware zoom and collision limits, with less travel
     // required on touch-first screens. Mouse/trackpad sensitivity stays native.

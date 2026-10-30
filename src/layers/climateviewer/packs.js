@@ -20,8 +20,12 @@ export function getClimateViewerPack(id) {
   return BY_ID.get(id) ?? null;
 }
 
+/**
+ * Startup is intentionally minimal: no CV layer is enabled until the operator
+ * picks a pack or toggles a row. Packs remain one-click suggestions.
+ */
 export function starterClimateViewerLayerIds() {
-  return getClimateViewerPack(STARTER_PACK_ID)?.layers?.slice() ?? [];
+  return [];
 }
 
 /** The pack whose layer set exactly matches the enabled CV ids, if any. */

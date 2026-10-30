@@ -455,7 +455,9 @@ export class LayerPanel {
 
       const readout = Boolean(this._rowControlsFor(layer.id)?.readout);
       if (!readout) right.appendChild(count);
-      right.appendChild(toggle);
+      // Toggle first: the action controls the row, and a long name must never
+      // push it past the right edge of the scroll viewport.
+      topRow.appendChild(toggle);
       topRow.appendChild(left);
       topRow.appendChild(right);
 
@@ -1456,7 +1458,7 @@ export class LayerPanel {
         this._climateViewerClockSync?.();
       }
     });
-    right.appendChild(toggle);
+    topRow.appendChild(toggle);
     topRow.appendChild(left);
     topRow.appendChild(right);
     row.appendChild(topRow);

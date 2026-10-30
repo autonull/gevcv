@@ -21,19 +21,22 @@ function templateUrl(url) {
  * Build the Cesium provider for one catalog layer.
  * Mirrors the ClimateViewer 3D runtime: both ArcGIS types are imagery layers.
  */
-export async function createImageryProvider(layer, { time = null } = {}) {
+export async function createImageryProvider(
+  layer,
+  { time = null, cesium = Cesium } = {},
+) {
   const { provider } = layer;
   const sublayers = provider.sublayers?.join(',') || undefined;
   switch (provider.kind) {
     case 'arcgis':
       // Cesium 1.138 constructs ArcGIS providers through fromUrl so the
       // provider receives its Resource before any tile request.
-      return Cesium.ArcGisMapServerImageryProvider.fromUrl(provider.url, {
+      return cesium.ArcGisMapServerImageryProvider.fromUrl(provider.url, {
         ...(sublayers ? { layers: sublayers } : {}),
         enablePickFeatures: layer.flags.noFeatures !== true,
       });
     case 'wms':
-      return new Cesium.WebMapServiceImageryProvider({
+      return new cesium.WebMapServiceImageryProvider({
         url: provider.url,
         layers: provider.layers.join(','),
         enablePickFeatures: layer.flags.noFeatures !== true,
@@ -44,14 +47,14 @@ export async function createImageryProvider(layer, { time = null } = {}) {
         },
       });
     case 'wmts':
-      return new Cesium.WebMapTileServiceImageryProvider({
+      return new cesium.WebMapTileServiceImageryProvider({
         url: provider.url,
         layer: provider.layer,
         style: '',
         format: provider.format,
         tileMatrixSetID: provider.tileMatrixSetID,
         maximumLevel: provider.maximumLevel,
-        tilingScheme: new Cesium.WebMercatorTilingScheme(),
+        tilingScheme: new cesium.WebMercatorTilingScheme(),
         ...(time ? { dimensions: { Time: time } } : {}),
       });
     case 'urlTemplate':
