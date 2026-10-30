@@ -247,6 +247,17 @@ try {
   await page.waitForTimeout(1600);
   await shot(page, '06-atlas-mode.png');
 
+  const snapshotOpen = await page.evaluate(() => {
+    const button = document.querySelector('.data-cv-snapshot');
+    if (!button || button.disabled) return false;
+    button.click();
+    return Boolean(document.querySelector('.snapshot-overlay'));
+  });
+  check('Snapshot card renders', snapshotOpen);
+  await page.waitForTimeout(400);
+  await shot(page, '07-snapshot-card.png');
+  await page.evaluate(() => document.querySelector('.snapshot-close')?.click());
+
   const registry = await page.evaluate(() => ({
     layers: window.__gevData.layers.size,
     cv: [...window.__gevData.layers.keys()].filter((id) => id.startsWith('cv-')).length,

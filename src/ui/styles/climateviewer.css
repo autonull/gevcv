@@ -66,6 +66,71 @@
   box-shadow: 0 1px 0 rgb(255 255 255 / 7%);
 }
 
+.data-cv-snapshot {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.data-cv-snapshot:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.snapshot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 72%);
+}
+
+.snapshot-dialog {
+  display: grid;
+  gap: 10px;
+  max-width: min(1000px, 94vw);
+  max-height: 92vh;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 10px;
+  background: #0a1119;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 60%);
+  overflow: auto;
+}
+
+.snapshot-card {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.snapshot-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.snapshot-actions a,
+.snapshot-actions button {
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.snapshot-actions a {
+  border-color: rgb(120 220 160 / 55%);
+  color: #78dca0;
+}
+
 .data-cv-status {
   padding: 3px 4px 0;
   color: #f0b46c;

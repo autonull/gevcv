@@ -16,6 +16,10 @@ import {
   activeClimateViewerPackId,
 } from '../layers/climateviewer/packs.js';
 import { shouldOfferClimateViewerZoomOut } from '../layers/climateviewer/zoomOffer.js';
+import {
+  buildClimateViewerSnapshotModel,
+  openClimateViewerSnapshot,
+} from '../layers/climateviewer/snapshotCard.js';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 import { auditClimateViewerHealth } from '../layers/climateviewer/healthAudit.js';
 import {
@@ -354,6 +358,8 @@ export class LayerPanel {
     this._stopClimateViewerClockPlay?.();
     this._climateViewerClockUnsub?.();
     this._climateViewerClockUnsub = null;
+    this._climateViewerSnapshotOverlay?.remove();
+    this._climateViewerSnapshotOverlay = null;
     if (this._climateViewerSpotlightId) {
       this._climateViewerSpotlightId = null;
       this.setSpotlightLayer(null);
@@ -561,7 +567,13 @@ export class LayerPanel {
     copyAtlas.textContent = msg('MD');
     copyAtlas.setAttribute('aria-label', t('Copy atlas (Markdown)'));
     copyAtlas.title = t('Copy atlas (Markdown)');
-    toolbar.append(filter, count, enabledCount, clear, copyAtlas);
+    const snapshot = document.createElement('button');
+    snapshot.type = 'button';
+    snapshot.className = 'data-cv-snapshot';
+    snapshot.textContent = 'CARD'; // i18n-ignore: compact toolbar label
+    snapshot.setAttribute('aria-label', t('Snapshot card'));
+    snapshot.title = t('Snapshot card');
+    toolbar.append(filter, count, enabledCount, clear, copyAtlas, snapshot);
 
     const packBar = document.createElement('div');
     packBar.className = 'data-cv-packs';
@@ -743,6 +755,7 @@ export class LayerPanel {
       const enabled = layers.filter((layer) => this.isEnabled(layer.id)).length;
       enabledCount.textContent = `${enabled} ${t('ON')}`;
       clear.hidden = enabled === 0;
+      snapshot.disabled = enabled === 0;
       syncPackState();
     };
     this._climateViewerBulkSync = syncBulkState;
@@ -1167,6 +1180,15 @@ export class LayerPanel {
       setTimeout(() => {
         if (copyAtlas.isConnected) copyAtlas.textContent = msg('MD');
       }, 1500);
+    });
+    this._bind(snapshot, 'click', () => {
+      const enabled = layers.filter((layer) => this.isEnabled(layer.id));
+      if (!enabled.length) return;
+      this._climateViewerSnapshotOverlay?.remove();
+      this._climateViewerSnapshotOverlay = openClimateViewerSnapshot(
+        buildClimateViewerSnapshotModel(enabled),
+        { documentRef: details.ownerDocument },
+      ).overlay;
     });
     renderRecents();
     syncSheetState();
