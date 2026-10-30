@@ -11,7 +11,6 @@ import { t } from '../i18n/index.js';
  */
 export function createApplicationControls({
   scene: { viewer, mapStackController, operations },
-  loaderStatus,
   Controls = StyleManager,
   services,
   catalog,
@@ -49,10 +48,10 @@ export function createApplicationControls({
 
   // If no share link state, do default fly-to Austin
   if (!styleManager.hasShareState) {
-    loaderStatus.textContent = t('Flying to Austin, TX...');
+    console.info('[Init] Flying to Austin, TX...');
     defer(flyToAustin(viewer));
   } else {
-    loaderStatus.textContent = t('Restoring shared view...');
+    console.info('[Init] Restoring shared view...');
   }
 
   return { styleManager, weatherEffects, cockpitCloudEffects };

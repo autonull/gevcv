@@ -1,11 +1,4 @@
 {
-  "Flying to Austin, TX...": "Flug nach Austin, TX...",
-  "Restoring shared view...": "Geteilte Ansicht wird wiederhergestellt...",
-  "Configuring viewer...": "Viewer wird konfiguriert...",
-  "Loading Google 3D Tiles...": "Google 3D Tiles werden geladen...",
-  "Loading the keyless globe...": "Globus ohne Schlüssel wird geladen...",
-  "Google 3D Tiles unavailable ({detail}). Loading the keyless globe...": "Google 3D Tiles nicht verfügbar ({detail}). Globus ohne Schlüssel wird geladen...",
-  "Initializing systems...": "Systeme werden initialisiert...",
   "Close data attribution": "Datenquellenhinweis schließen",
   "UNAVAILABLE": "NICHT VERFÜGBAR",
   "SOURCE": "QUELLE",

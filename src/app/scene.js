@@ -27,7 +27,6 @@ export async function createApplicationScene({
   credits,
   MapController = MapStackController,
   mapOptions = {},
-  loaderStatus,
   signal,
   defer,
 }) {
@@ -45,7 +44,6 @@ export async function createApplicationScene({
       else window.__GOOGLE_MAPS_API_KEY__ = previousKey;
     });
   }
-  loaderStatus.textContent = t('Configuring viewer...');
   // Provider attribution stays visible, including clean-view and recording.
   const creditContainer = document.createElement('div');
   creditContainer.id = 'cesium-credits';
@@ -62,10 +60,7 @@ export async function createApplicationScene({
   defer(installTrackpadPinchZoom(viewer));
   registerDataCredits(viewer, credits);
   configureCreditKeyboardAccess(document);
-  loaderStatus.textContent =
-    googleApiKey || googleTokens || cesiumToken
-      ? t('Loading Google 3D Tiles...')
-      : t('Loading the keyless globe...');
+
   const photoreal = await loadPhotorealisticTileset(Cesium, {
     googleApiKey,
     googleTokens,
@@ -93,17 +88,10 @@ export async function createApplicationScene({
         tileError,
       );
       const tileErrorDetail = describeError(tileError);
-      loaderStatus.textContent = t(
-        'Google 3D Tiles unavailable ({detail}). Loading the keyless globe...',
-        {
-          detail: tileErrorDetail,
-        },
-      );
+      // Error is logged; the keyless globe will load next.
     }
     viewer.scene.globe.show = true;
   }
-
-  loaderStatus.textContent = t('Initializing systems...');
 
   const climateViewerBasemaps = createClimateViewerBasemapSources({
     ionImagery: cesiumToken

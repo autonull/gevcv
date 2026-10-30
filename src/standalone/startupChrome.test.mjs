@@ -39,11 +39,6 @@ function fixture() {
   vm.runInContext(source, context);
   const stop = context.startApplicationChrome({
     initializeSettings: context.initKeySetup,
-    loadingScreen: {
-      classList: { add: (value) => events.push(value) },
-      addEventListener: (type, listener) => listeners.set(type, listener),
-      removeEventListener: (type) => listeners.delete(type),
-    },
     styleManager: {
       initialRestorePromise: new Promise((resolve) => {
         restored = resolve;
@@ -73,30 +68,16 @@ async function flush() {
   for (let i = 0; i < 12; i++) await Promise.resolve();
 }
 
-test('welcome waits for restoration, minimum delay, and the cover transition', async () => {
+test('welcome waits for restoration', async () => {
   const f = fixture();
-  f.fire(1000);
   await flush();
   assert.deepEqual(f.events, []);
   f.restored();
   await flush();
-  assert.deepEqual(f.events, ['hidden']);
-  f.listeners.get('transitionend')();
-  f.fire(900);
-  assert.deepEqual(f.events, ['hidden', 'welcome']);
+  assert.deepEqual(f.events, ['welcome']);
   await f.stop();
   assert.deepEqual(f.events.slice(-2), ['welcome:destroy', 'settings:destroy']);
   assert.equal(f.timers.size, 0);
-});
-
-test('reduced motion uses the bounded fallback after the cover hides', async () => {
-  const f = fixture();
-  f.restored();
-  f.fire(1000);
-  await flush();
-  f.fire(900);
-  assert.deepEqual(f.events, ['hidden', 'welcome']);
-  await f.stop();
 });
 
 test('shutdown while restore is pending never reveals late welcome UI', async () => {
@@ -105,22 +86,7 @@ test('shutdown while restore is pending never reveals late welcome UI', async ()
   await f.stop();
   f.restored();
   await flush();
-  f.fire(1000);
-  f.fire(900);
   assert.deepEqual(f.events, ['settings:destroy']);
   assert.equal(f.listeners.size, 0);
   assert.equal(f.timers.size, 0);
-});
-
-test('shutdown during the cover transition cancels the listener and fallback', async () => {
-  const f = fixture();
-  f.restored();
-  f.fire(1000);
-  await flush();
-  const transition = f.listeners.get('transitionend');
-  f.controller.abort();
-  await f.stop();
-  transition();
-  f.fire(900);
-  assert.deepEqual(f.events, ['hidden', 'settings:destroy']);
 });

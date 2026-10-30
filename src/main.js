@@ -11,11 +11,10 @@ const application = createStandaloneApplication({
 
 application.start().catch((error) => {
   console.error("God's Eye View initialization failed:", error);
-  const loaderStatus = document.querySelector('#loading-screen .loader-status');
-  loaderStatus.textContent = t('Error: {message}', {
+  document.body.textContent = t('Error: {message}', {
     message: describeError(error),
   });
-  loaderStatus.style.color = '#ff4444';
+  document.body.style.color = '#ff4444';
 });
 
 export { application };

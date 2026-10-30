@@ -21,7 +21,6 @@ export function createApplicationTools({
   scene,
   controls,
   data,
-  loadingScreen,
   placeSearch,
   voice = {},
   startChrome,
@@ -106,7 +105,7 @@ export function createApplicationTools({
     });
   }
   if (startChrome)
-    defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));
+    defer(startChrome({ styleManager, dataManager, signal }));
   // Idle render governor: flips the scene into requestRenderMode whenever
   // nothing animates per frame. Installed AFTER every module above has had
   // its chance to register pre-install holds. (perf wave 2)

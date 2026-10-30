@@ -34,8 +34,6 @@ export function createStandaloneApplication({
   setLocale(activeLocale);
   applyDocumentLanguage(document, activeLocale);
   applyDocumentTranslations(document);
-  const loadingScreen = document.getElementById('loading-screen');
-  const loaderStatus = loadingScreen.querySelector('.loader-status');
   let placeSearch;
   let catalog;
   return createApplication({
@@ -56,7 +54,6 @@ export function createStandaloneApplication({
         // app's server when it offers them.
         googleTokens: googleApiKey ? null : createGoogleTokenSource(),
         cesiumToken,
-        loaderStatus,
       });
       catalog = createStandaloneCatalog({
         sources,
@@ -77,13 +74,12 @@ export function createStandaloneApplication({
     createControls: (context) =>
       createStandaloneControls({
         ...context,
-        loaderStatus,
         placeSearch,
         catalog,
       }),
     createData: (context) =>
       createStandaloneData({ ...context, allowQaRegistration, catalog }),
     createTools: (context) =>
-      createStandaloneTools({ ...context, loadingScreen, placeSearch, voice }),
+      createStandaloneTools({ ...context, placeSearch, voice }),
   });
 }

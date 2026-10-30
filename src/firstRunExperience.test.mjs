@@ -863,12 +863,6 @@ test('markup, startup ordering and accessibility remain pinned', () => {
   );
 
   assert.match(startup, /styleManager\.initialRestorePromise/);
-  assert.ok(
-    startup.indexOf("loadingScreen.classList.add('hidden')") <
-      startup.indexOf(
-        "loadingScreen.addEventListener('transitionend', revealFirstRun",
-      ),
-  );
   assert.match(
     startup,
     /initializeWelcome\?\.\(\{ styleManager, dataManager \}\)/,
