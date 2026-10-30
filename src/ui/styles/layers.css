@@ -43,6 +43,12 @@
 #data-panel .panel-glow {
   position: absolute;
   inset: -20px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Decorative panel glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #data-panel .panel-glow {
   background: radial-gradient(
     ellipse at center,
     var(--accent-dim) 0%,
@@ -50,7 +56,6 @@
   );
   filter: blur(20px);
   opacity: 0.25;
-  pointer-events: none;
 }
 
 .data-panel-inner {
@@ -59,8 +64,6 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--panel-radius);
   padding: 14px 16px 12px;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
@@ -72,6 +75,12 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .data-panel-inner {
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 @media (max-height: 720px) {
@@ -461,9 +470,13 @@
     linear-gradient(#22e6e6, #22e6e6) left bottom / 1px 9px no-repeat,
     linear-gradient(#22e6e6, #22e6e6) right bottom / 9px 1px no-repeat,
     linear-gradient(#22e6e6, #22e6e6) right bottom / 1px 9px no-repeat;
-  filter: drop-shadow(0 0 4px rgba(34, 230, 230, 0.45));
   pointer-events: none;
   transition: opacity 0.12s ease;
+}
+
+/* Decorative drop-shadow glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #space-mission-panel-host .space-mission-roster-item::before {
+  filter: drop-shadow(0 0 4px rgba(34, 230, 230, 0.45));
 }
 #space-mission-panel-host .space-mission-roster-item:hover,
 #space-mission-panel-host .space-mission-roster-item:focus-visible {
@@ -843,7 +856,6 @@
   width: 92px;
   height: 138px;
   pointer-events: none;
-  will-change: transform;
 }
 
 .mission-replay-flight-symbol {
@@ -852,6 +864,11 @@
   transform: rotate(var(--mission-replay-rotation, 0deg))
     scale(var(--mission-replay-vehicle-scale));
   transform-origin: 46px 69px;
+}
+
+/* will-change for animation performance — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .mission-replay-vehicle-overlay,
+[data-visual-mode="styled"] .mission-replay-flight-symbol {
   will-change: transform;
 }
 
@@ -864,6 +881,9 @@
   height: 8px;
   border-radius: 50%;
   background: #22e6e6;
+}
+
+[data-visual-mode="styled"] .mission-replay-orbit-dot {
   box-shadow: 0 0 7px rgba(34, 230, 230, 0.78);
 }
 
@@ -883,6 +903,10 @@
   width: 48px;
   height: 72px;
   overflow: visible;
+}
+
+/* Decorative rocket glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .mission-replay-rocket {
   filter: drop-shadow(0 0 6px rgba(34, 230, 230, 0.66));
 }
 
@@ -910,6 +934,10 @@
   width: 72px;
   height: 72px;
   overflow: visible;
+}
+
+/* Decorative thrust glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .mission-replay-thrust {
   filter: drop-shadow(0 0 4px rgba(34, 230, 230, 0.9));
 }
 
@@ -923,16 +951,27 @@
   stroke-width: 2;
   opacity: 0;
   vector-effect: non-scaling-stroke;
+}
+
+/* Decorative thrust animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .mission-replay-thrust ellipse {
   animation: mission-thrust-wave 0.9s ease-in-out infinite;
   animation-delay: calc(var(--thrust-index) * 0.15s);
 }
 
-.mission-replay-thrust ellipse:nth-child(2n) {
+[data-visual-mode="styled"] .mission-replay-thrust ellipse:nth-child(2n) {
   stroke: rgba(216, 255, 255, 0.78);
 }
 
 .mission-replay-vehicle-overlay.is-paused .mission-replay-thrust ellipse {
   animation-play-state: paused;
+}
+
+/* Respect prefers-reduced-motion in styled mode. */
+@media (prefers-reduced-motion: reduce) {
+  [data-visual-mode="styled"] .mission-replay-thrust ellipse {
+    animation: none;
+  }
 }
 
 .mission-replay-overlay-callout {
@@ -945,10 +984,14 @@
     9px/1.38 'JetBrains Mono',
     monospace;
   letter-spacing: 0.075em;
+  white-space: nowrap;
+}
+
+/* Decorative text-shadow glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .mission-replay-overlay-callout {
   text-shadow:
     0 1px 2px #001018,
     0 0 6px #001018;
-  white-space: nowrap;
 }
 
 .mission-replay-overlay-callout strong,
@@ -1015,6 +1058,10 @@
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .global-context-panel-inner {
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
@@ -1081,6 +1128,10 @@
   /* Active: full-colour saucer with a soft halo. drop-shadow works on an emoji
      where text-shadow does not, so the glyph itself telegraphs the state
      rather than relying on the chrome alone. */
+}
+
+/* Decorative active glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .tr3b-toggle[aria-pressed='true'] {
   filter: drop-shadow(0 0 5px rgba(150, 210, 255, 0.9));
 }
 /* One segmented control: the two modes read as a single choice. */

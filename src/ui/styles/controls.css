@@ -12,6 +12,12 @@
 #control-panel .panel-glow {
   position: absolute;
   inset: -30px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Decorative panel glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #control-panel .panel-glow {
   background: radial-gradient(
     ellipse at center bottom,
     var(--accent-dim) 0%,
@@ -19,7 +25,6 @@
   );
   filter: blur(30px);
   opacity: 0.4;
-  pointer-events: none;
 }
 
 .panel-inner {
@@ -28,12 +33,16 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--panel-radius);
   padding: 16px 20px 18px;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
     0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .panel-inner {
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 .panel-header {
@@ -69,6 +78,10 @@
   letter-spacing: 1.8px;
   color: var(--accent);
   text-transform: uppercase;
+}
+
+/* Decorative text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .panel-mini-value {
   text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
@@ -343,6 +356,10 @@ html:not([lang='en']) .panel-collapse-btn {
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #pp-toggles:not(.collapsed) {
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
@@ -370,8 +387,6 @@ html:not([lang='en']) .panel-collapse-btn {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
@@ -380,6 +395,12 @@ html:not([lang='en']) .panel-collapse-btn {
     color var(--transition-fast),
     border-radius var(--transition-fast);
   outline: none;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .pp-toggle-btn {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .pp-toggle-group {
@@ -411,9 +432,13 @@ html:not([lang='en']) .panel-collapse-btn {
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  cursor: default;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #pp-toggles .pp-header-row {
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  cursor: default;
 }
 
 /* Expanded Display already owns the glass shell. Keep its header visually
@@ -467,6 +492,10 @@ html:not([lang='en']) .panel-collapse-btn {
 .pp-toggle-btn.active {
   border-color: var(--accent);
   background: var(--accent-dim);
+}
+
+/* Decorative active glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .pp-toggle-btn.active {
   box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
 }
 
@@ -538,6 +567,10 @@ html:not([lang='en']) .panel-collapse-btn {
   border: 1px solid var(--glass-border);
   border-top: none;
   border-radius: 0 0 8px 8px;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .pp-slider-row {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -984,6 +1017,10 @@ body.ui-clean-view #scene-runtime.active {
 
 #detection-toggle.active .pp-icon {
   color: rgba(0, 255, 80, 0.9);
+}
+
+/* Decorative text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #detection-toggle.active .pp-icon {
   text-shadow: 0 0 6px rgba(0, 255, 80, 0.5);
 }
 
@@ -991,6 +1028,11 @@ body.ui-clean-view #scene-runtime.active {
 #detection-toggle.god {
   border-color: rgba(0, 255, 80, 0.8);
   background: rgba(0, 255, 80, 0.18);
+}
+
+/* Decorative glow and pulse animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #detection-toggle.panoptic,
+[data-visual-mode="styled"] #detection-toggle.god {
   box-shadow: 0 0 16px rgba(0, 255, 80, 0.25);
   animation: detection-pulse 2s ease-in-out infinite;
 }
@@ -1002,6 +1044,14 @@ body.ui-clean-view #scene-runtime.active {
   }
   50% {
     box-shadow: 0 0 22px rgba(0, 255, 80, 0.35);
+  }
+}
+
+/* Respect prefers-reduced-motion in styled mode. */
+@media (prefers-reduced-motion: reduce) {
+  [data-visual-mode="styled"] #detection-toggle.panoptic,
+  [data-visual-mode="styled"] #detection-toggle.god {
+    animation: none;
   }
 }
 
@@ -1024,8 +1074,6 @@ body.ui-clean-view #scene-runtime.active {
   border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 14px 16px;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   opacity: 0;
   visibility: hidden;
@@ -1034,6 +1082,12 @@ body.ui-clean-view #scene-runtime.active {
     opacity var(--transition-smooth),
     visibility var(--transition-smooth),
     transform var(--transition-smooth);
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #param-slider-panel {
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 #param-slider-panel::-webkit-scrollbar {

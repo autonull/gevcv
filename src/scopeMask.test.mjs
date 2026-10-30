@@ -31,8 +31,8 @@ import { SCOPE_FEATHER_RATIO_MAX, clampScopeFeatherPct } from './scopeMaskPolicy
 
 beforeEach(() => {
   _resetScopeMaskForTest();
-  // Scope is off on a fresh boot; these tests exercise the enabled path.
-  setScopeMaskEnabled(true);
+  // Scope is off on a fresh boot; tests that need it enabled will call
+  // setScopeMaskEnabled(true) after setting up their DOM with visualMode=styled.
 });
 
 test('geometry anchors the visible edge to the shared keyhole radius', () => {
@@ -188,6 +188,9 @@ function stubScopeMaskDom({ width = 1000, height = 800, dpr = 1 } = {}) {
 
 test('scope appearance follows direct state changes and install/destroy lifecycles', () => {
   const dom = stubScopeMaskDom();
+  // Set visual mode to styled so the scope mask canvas is created.
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   try {
     setScopeMaskEnabled(false);
     assert.equal(dom.documentElement.dataset.scopeMask, 'off');
@@ -211,6 +214,8 @@ test('scope appearance follows direct state changes and install/destroy lifecycl
 
 test('a DPR change with no resize still repaints the backing store', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   try {
     installScopeMask({ container: dom.container });
     // 1x monitor: backing store matches CSS pixels.
@@ -235,6 +240,8 @@ test('a DPR change with no resize still repaints the backing store', () => {
 
 test('destroy tears the DPR watch down (no redraw after teardown)', () => {
   const dom = stubScopeMaskDom({ width: 640, height: 480, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   try {
     installScopeMask({ container: dom.container });
     assert.equal(dom.canvas.width, 640);
@@ -363,6 +370,8 @@ test('a full zoom-in gesture costs only a handful of repaints', () => {
 
 test('an override pins the terminus and null restores the ramp', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   try {
     installScopeMask({ container: dom.container });
     setScopeTerminusOverride(0.97);
@@ -385,6 +394,8 @@ test('an override pins the terminus and null restores the ramp', () => {
 
 test('the hard-crop (feather 0) path honors the same terminus alpha', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   try {
     installScopeMask({ container: dom.container });
     updateScopeTerminusForHeight(SCOPE_TERMINUS_FAR_M + 5_000_000); // true full-globe view
@@ -441,6 +452,8 @@ function stubScopeViewer(container, heightM) {
 
 test('a disabled scope does no canvas work and samples no camera heights', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   const rig = stubScopeViewer(dom.container, 14_000_000); // true full-globe view
   try {
     installScopeMask(rig.viewer);
@@ -485,6 +498,8 @@ test('a disabled scope does no canvas work and samples no camera heights', () =>
 
 test('a DPR change that also crosses a terminus step paints once, not twice', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });
+  dom.documentElement.dataset.visualMode = 'styled';
+  setScopeMaskEnabled(true);
   const rig = stubScopeViewer(dom.container, SCOPE_TERMINUS_FAR_M);
   try {
     installScopeMask(rig.viewer);

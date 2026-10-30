@@ -273,7 +273,9 @@ test('Display and voice HUD routes preserve explicit Cyber entry and exit author
 });
 
 test('scope choice and expanded feather survive every HUD layout and both restore paths', async (t) => {
-  const { owner } = styleOwner(t, 'tactical');
+  const { owner, root } = styleOwner(t, 'tactical');
+  // Set visual mode to styled so the scope mask can be enabled.
+  root.dataset.visualMode = 'styled';
   const previous = { enabled: isScopeMaskEnabled(), feather: getScopeMaskFeather() };
   t.after(() => { setScopeMaskEnabled(previous.enabled); setScopeMaskFeather(previous.feather); });
   Object.assign(owner.services, { setScopeMaskEnabled, setScopeMaskFeather });

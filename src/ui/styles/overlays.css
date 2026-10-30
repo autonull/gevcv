@@ -74,7 +74,6 @@
   font-size: 10px;
   letter-spacing: 2px;
   color: var(--accent);
-  text-shadow: 0 0 12px var(--accent-glow);
   pointer-events: none;
   user-select: none;
   opacity: 0;
@@ -82,6 +81,11 @@
   transition:
     opacity var(--transition-smooth),
     visibility var(--transition-smooth);
+}
+
+/* Decorative glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #orbit-indicator {
+  text-shadow: 0 0 12px var(--accent-glow);
 }
 
 #orbit-indicator.active {
@@ -119,9 +123,13 @@
 #intel-hud * {
   font-family: var(--font-mono);
   color: var(--hud-color);
-  text-shadow: 0 0 4px var(--hud-glow);
   text-transform: uppercase;
   line-height: 1.6;
+}
+
+/* Decorative HUD text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #intel-hud * {
+  text-shadow: 0 0 4px var(--hud-glow);
 }
 
 .hud-bottom-bar {
@@ -245,9 +253,13 @@
 
 #hud-rec-dot {
   color: #ff3333;
-  text-shadow: 0 0 6px rgba(255, 51, 51, 0.8);
   font-size: 14px;
   vertical-align: middle;
+}
+
+/* Decorative REC dot glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #hud-rec-dot {
+  text-shadow: 0 0 6px rgba(255, 51, 51, 0.8);
 }
 
 .hud-orbital {

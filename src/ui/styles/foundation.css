@@ -136,8 +136,10 @@ body {
 /* Scope mask — the explicit circular viewport treatment (see
    src/scopeMask.js for the emergent-artifact history). z2 keeps it above
    the WebGL scene but under the z5 detection surface, preserving the old
-   compositing order where detection's blend rode the masked scene. */
-#scope-mask {
+   compositing order where detection's blend rode the masked scene.
+   GATED: only in styled visual mode (opt-in). Functional mode removes the
+   canvas from the DOM entirely via scopeMask.js. */
+[data-visual-mode="styled"] #scope-mask {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -174,8 +176,9 @@ body {
 }
 
 /* ── Source-backed cockpit weather ─────────────
-   Low-resolution GPU cloud pass composited only inside the cockpit keyhole. */
-#cockpit-cloud-effects {
+   Low-resolution GPU cloud pass composited only inside the cockpit keyhole.
+   GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #cockpit-cloud-effects {
   position: fixed;
   inset: 0;
   z-index: 7;
@@ -190,13 +193,14 @@ body {
   transition: opacity 900ms ease;
 }
 
-body.cockpit-mode #cockpit-cloud-effects.active {
+body.cockpit-mode [data-visual-mode="styled"] #cockpit-cloud-effects.active {
   display: block;
   opacity: 0.86;
 }
 
-/* ── Full-globe celestial keyhole ring ─────── */
-.celestial-ring-overlay {
+/* ── Full-globe celestial keyhole ring ───────
+   GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .celestial-ring-overlay {
   position: absolute;
   inset: 0;
   /* Above the z1 scope mask regardless of DOM order (the ring is built by
@@ -213,12 +217,12 @@ body.cockpit-mode #cockpit-cloud-effects.active {
     visibility 300ms ease;
 }
 
-.celestial-ring-overlay.visible {
+[data-visual-mode="styled"] .celestial-ring-overlay.visible {
   opacity: 1;
   visibility: visible;
 }
 
-.celestial-ring-overlay.disabled {
+[data-visual-mode="styled"] .celestial-ring-overlay.disabled {
   display: none;
 }
 
@@ -397,10 +401,14 @@ body.cockpit-mode #cockpit-cloud-effects.active {
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 0 20px rgba(0, 212, 255, 0.08);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   font-family: var(--font-mono);
   pointer-events: auto;
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #gev-voice-control {
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 #gev-voice-button {
@@ -420,6 +428,10 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #gev-voice-button:hover {
   color: #ffffff;
   border-color: var(--accent);
+}
+
+/* Decorative hover glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #gev-voice-button:hover {
   box-shadow: 0 0 12px rgba(0, 212, 255, 0.22);
 }
 
@@ -498,7 +510,8 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   user-select: none;
 }
 
-#title-bar .title-glow {
+/* Decorative title glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #title-bar .title-glow {
   position: absolute;
   top: -20px;
   left: -20px;
@@ -509,29 +522,19 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   opacity: 0.6;
 }
 
-#title-bar h1 {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: 8px;
-  color: var(--text-primary);
+/* Decorative text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #title-bar h1 {
   text-shadow: 0 0 30px var(--accent-glow);
-  position: relative;
 }
 
-#title-bar .title-logo {
-  position: relative;
-  display: block;
-  width: 52px;
-  height: auto;
+/* Decorative logo drop-shadow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #title-bar .title-logo {
   filter: drop-shadow(0 0 12px rgba(0, 246, 255, 0.5));
 }
 
-#title-bar .title-logo::before,
-#title-bar .title-logo::after {
+/* Radio broadcasting animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #title-bar .title-logo::before,
+[data-visual-mode="styled"] #title-bar .title-logo::after {
   --radio-broadcast-opacity: 0.28;
   content: '';
   position: absolute;
@@ -549,20 +552,20 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   transform-origin: 50% 100%;
 }
 
-#title-bar .title-logo::after {
+[data-visual-mode="styled"] #title-bar .title-logo::after {
   --radio-broadcast-opacity: 0.17;
   top: -15px;
   width: 27px;
   height: 13px;
 }
 
-#title-bar.radio-broadcasting .title-logo::before,
-#title-bar.radio-broadcasting .title-logo::after {
+[data-visual-mode="styled"] #title-bar.radio-broadcasting .title-logo::before,
+[data-visual-mode="styled"] #title-bar.radio-broadcasting .title-logo::after {
   opacity: var(--radio-broadcast-opacity);
   animation: title-radio-broadcast 1.8s ease-in-out infinite;
 }
 
-#title-bar.radio-broadcasting .title-logo::after {
+[data-visual-mode="styled"] #title-bar.radio-broadcasting .title-logo::after {
   animation-delay: 0.28s;
 }
 
@@ -579,8 +582,8 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #title-bar.radio-broadcasting .title-logo::before,
-  #title-bar.radio-broadcasting .title-logo::after {
+  [data-visual-mode="styled"] #title-bar.radio-broadcasting .title-logo::before,
+  [data-visual-mode="styled"] #title-bar.radio-broadcasting .title-logo::after {
     animation: none;
   }
 }
@@ -642,7 +645,8 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   text-transform: uppercase;
 }
 
-#style-indicator .indicator-value {
+/* Decorative glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #style-indicator .indicator-value {
   display: block;
   font-family: var(--font-mono);
   font-size: 16px;
@@ -652,4 +656,16 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   margin-top: 4px;
   text-shadow: 0 0 20px var(--accent-glow);
   transition: var(--transition-smooth);
+}
+
+/* Functional fallback — no glow, minimal transition. */
+[data-visual-mode="functional"] #style-indicator .indicator-value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 5px;
+  color: var(--accent);
+  margin-top: 4px;
+  transition: var(--transition-fast);
 }

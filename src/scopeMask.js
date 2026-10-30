@@ -421,12 +421,28 @@ function syncScopeMaskAppearance(enabled = _enabled) {
 }
 
 /**
+ * Check if the visual mode allows the scope mask (styled mode only).
+ * @returns {boolean}
+ */
+function isScopeMaskAllowed() {
+  const mode = globalThis.document?.documentElement?.dataset?.visualMode;
+  return mode === 'styled';
+}
+
+/**
  * Install the scope mask into the viewer container. Idempotent.
  * @param {Cesium.Viewer} viewer
  * @returns {void}
  */
 export function installScopeMask(viewer) {
-  if (_canvas || !viewer?.container) return;
+  if (!viewer?.container) return;
+  // Do not create the canvas in functional mode — it costs a compositor layer
+  // even when cleared. The mask is opt-in via visual mode.
+  if (!isScopeMaskAllowed()) {
+    syncScopeMaskAppearance(false);
+    return;
+  }
+  if (_canvas) return;
   syncScopeMaskAppearance();
   _container = viewer.container;
   _viewer = viewer;
@@ -501,6 +517,13 @@ function teardownCameraHeightWatch() {
  */
 export function setScopeMaskEnabled(enabled) {
   const next = Boolean(enabled);
+  // In functional mode the scope mask is not allowed; force it off without
+  // creating the canvas. The UI control should reflect this.
+  if (!isScopeMaskAllowed()) {
+    _enabled = false;
+    syncScopeMaskAppearance(false);
+    return;
+  }
   const reEnabled = next && !_enabled;
   _enabled = next;
   syncScopeMaskAppearance();
