@@ -10,6 +10,7 @@ export class LayerPresentation {
       weatherClock,
       climateViewerClock,
       climateViewerHealth,
+      getCameraHeight = () => null,
       requestRender = governorRequestRender,
       invalidateDetection = markDetectionSourcesChanged,
     } = {},
@@ -18,6 +19,7 @@ export class LayerPresentation {
     this.weatherClock = weatherClock;
     this.climateViewerClock = climateViewerClock;
     this.climateViewerHealth = climateViewerHealth;
+    this.getCameraHeight = getCameraHeight;
     this._panel = null;
     this.pendingVisible = false;
     this._unsubscribe = manager.subscribeActivity((change) => {
@@ -76,6 +78,7 @@ export class LayerPresentation {
         },
         zoomToLayer: (id) =>
           this.manager.layers.get(id)?.module?.zoomTo?.() ?? false,
+        getCameraHeight: () => this.getCameraHeight(),
       });
     return this._panel;
   }

@@ -2870,6 +2870,7 @@
   "Similar layers": "類似圖層",
   "No layers match": "沒有符合的圖層",
   "Layer not found: {id}": "找不到圖層：{id}",
+  "Zoom out to see it": "縮小以檢視",
   "Layers enabled": "已啟用圖層",
   "Change {count} layers?": "變更 {count} 個圖層？",
   "Date": "日期",

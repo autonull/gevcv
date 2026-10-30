@@ -2870,6 +2870,7 @@
   "Similar layers": "類似レイヤー",
   "No layers match": "一致するレイヤーなし",
   "Layer not found: {id}": "レイヤーが見つかりません: {id}",
+  "Zoom out to see it": "縮小して表示",
   "Layers enabled": "有効なレイヤー",
   "Change {count} layers?": "{count} レイヤーを変更しますか？",
   "Date": "日付",

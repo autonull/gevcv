@@ -15,6 +15,7 @@ import {
   CLIMATEVIEWER_PACKS,
   activeClimateViewerPackId,
 } from '../layers/climateviewer/packs.js';
+import { shouldOfferClimateViewerZoomOut } from '../layers/climateviewer/zoomOffer.js';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 import { auditClimateViewerHealth } from '../layers/climateviewer/healthAudit.js';
 import {
@@ -257,6 +258,7 @@ export class LayerPanel {
     subscribeRowControls,
     onHiddenRefresh = () => {},
     zoomToLayer = () => false,
+    getCameraHeight = () => null,
     retryLayer,
     weatherClock,
     climateViewerClock,
@@ -266,6 +268,7 @@ export class LayerPanel {
     this.climateViewerClock = climateViewerClock;
     this.climateViewerHealth = climateViewerHealth;
     this.zoomToLayer = zoomToLayer;
+    this.getCameraHeight = getCameraHeight;
     this.retryLayer =
       retryLayer ??
       (async (id) => {
@@ -1419,6 +1422,7 @@ export class LayerPanel {
             message: failure.message || failure,
           });
         }
+        syncZoomOffer();
         this._climateViewerFolderSync?.();
         this._climateViewerBulkSync?.();
         this._climateViewerClockSync?.();
@@ -1433,6 +1437,22 @@ export class LayerPanel {
     meta.className = 'data-toggle-meta';
     setRowText(meta, this._buildMetaText(layer));
     row.appendChild(meta);
+    const zoomOffer = document.createElement('button');
+    zoomOffer.type = 'button';
+    zoomOffer.className = 'data-cv-zoom-offer';
+    zoomOffer.textContent = t('Zoom out to see it');
+    const syncZoomOffer = () => {
+      zoomOffer.hidden = !(
+        this.isEnabled(layer.id) &&
+        shouldOfferClimateViewerZoomOut(layer, this.getCameraHeight?.())
+      );
+    };
+    this._bind(zoomOffer, 'click', () => {
+      this.zoomToLayer(layer.id);
+      zoomOffer.hidden = true;
+    });
+    syncZoomOffer();
+    row.appendChild(zoomOffer);
     if (this._climateViewerTimeEnabled(layer) && this.climateViewerClock) {
       const day = document.createElement('span');
       day.className = 'data-cv-day';

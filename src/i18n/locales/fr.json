@@ -3010,6 +3010,7 @@
   "Similar layers": "Couches similaires",
   "No layers match": "Aucune couche ne correspond",
   "Layer not found: {id}": "Couche introuvable : {id}",
+  "Zoom out to see it": "Dézoomer pour le voir",
   "Layers enabled": "Couches actives",
   "Change {count} layers?": "Modifier {count} couches ?",
   "Date": "Date du jour",

@@ -3080,6 +3080,7 @@
   "Similar layers": "Схожі шари",
   "No layers match": "Немає відповідних шарів",
   "Layer not found: {id}": "Шар не знайдено: {id}",
+  "Zoom out to see it": "Віддалити, щоб побачити",
   "Layers enabled": "Активні шари",
   "Change {count} layers?": "Змінити шари: {count}?",
   "Date": "Дата",

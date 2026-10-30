@@ -2940,6 +2940,7 @@
   "Similar layers": "Ähnliche Layer",
   "No layers match": "Keine Layer passen",
   "Layer not found: {id}": "Layer nicht gefunden: {id}",
+  "Zoom out to see it": "Herauszoomen, um es zu sehen",
   "Layers enabled": "Aktive Layer",
   "Change {count} layers?": "{count} Layer ändern?",
   "Date": "Datum",

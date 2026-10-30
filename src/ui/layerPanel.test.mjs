@@ -1088,3 +1088,65 @@ test('ClimateViewer marks the active pack and resolves deep links', async () => 
     globalThis.document = previousDocument;
   }
 });
+
+test('enabling a global CV layer at city zoom offers a zoom-out', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const zoomed = [];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async (layerId, value) => {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) layer.enabled = value;
+    },
+    zoomToLayer: (layerId) => {
+      zoomed.push(layerId);
+      return true;
+    },
+    getCameraHeight: () => 600,
+  });
+  panel._climateViewerOpen = true;
+  try {
+    panel.mount(f.container);
+    const filter = f.find((node) =>
+      node.className?.split(' ').includes('data-cv-filter'),
+    );
+    filter.value = id;
+    filter.dispatchEvent(new Event('input'));
+    const row = f.find((node) => node.dataset.layerId === id);
+    assert.ok(row);
+    const toggle = row.querySelector('.data-toggle-btn');
+    toggle.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const offer = row.querySelector('.data-cv-zoom-offer');
+    assert.equal(offer.hidden, false);
+    offer.click();
+    assert.deepEqual(zoomed, [id]);
+    assert.equal(offer.hidden, true);
+
+    toggle.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(row.querySelector('.data-cv-zoom-offer').hidden, true);
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});
