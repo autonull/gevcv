@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 
 test('panel presentation places Transit between Street Traffic and Bike Share in Movement', () => {
   const source = readFileSync(
@@ -337,6 +338,72 @@ test('row text keeps a hyphenated code whole and never starts a line with the se
     setRowText(long, 'see https-proxy-endpoint-config-x');
     assert.deepEqual(kept(long), [], 'a long hyphenated run may still wrap');
   } finally {
+    globalThis.document = previousDocument;
+  }
+});
+
+test('the ClimateViewer panel renders a collapsible folder tree with folder toggles', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const ids = ['cv-live-usgs-all-hour', 'cv-live-usgs-45-today'];
+  const layers = ids.map((id) => ({
+    id,
+    name: catalog.layers[id].name,
+    icon: '*',
+    enabled: false,
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    metadata: catalog.layers[id],
+    stats: {},
+  }));
+  const calls = [];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (id) => layers.find((layer) => layer.id === id)?.enabled,
+    setEnabled: async (id, value, options) => {
+      calls.push([id, value, options]);
+      const layer = layers.find((entry) => entry.id === id);
+      if (layer) layer.enabled = value;
+    },
+  });
+  panel._climateViewerOpen = true;
+  try {
+    panel.mount(f.container);
+    const alerts = f.find((node) => node.dataset.cvPath === 'Alerts');
+    assert.ok(alerts);
+    assert.equal(
+      alerts.querySelector('.data-cv-folder').getAttribute('aria-expanded'),
+      'true',
+    );
+    const earthquake = f.find(
+      (node) => node.dataset.cvPath === 'Alerts/Earthquake',
+    );
+    assert.ok(earthquake);
+    assert.equal(
+      earthquake.querySelector('.data-cv-folder').getAttribute('aria-expanded'),
+      'false',
+    );
+    assert.equal(
+      earthquake.querySelector('.data-cv-folder-toggle').textContent,
+      'OFF',
+    );
+    earthquake.querySelector('.data-cv-folder').click();
+    const rows = ids.map((id) => f.find((node) => node.dataset.layerId === id));
+    assert.ok(rows.every(Boolean));
+    const expanded = f.find(
+      (node) => node.dataset.cvPath === 'Alerts/Earthquake',
+    );
+    expanded.querySelector('.data-cv-folder-toggle').click();
+    assert.deepEqual(
+      calls.map(([id, value]) => [id, value]),
+      ids.map((id) => [id, true]),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  } finally {
+    panel.destroy();
     globalThis.document = previousDocument;
   }
 });
