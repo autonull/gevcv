@@ -2864,5 +2864,8 @@
   "Copy link": "リンクをコピー",
   "Copy Markdown": "Markdownをコピー",
   "Copy atlas (Markdown)": "アトラスをコピー（Markdown）",
-  "MD": "MD"
+  "MD": "MD",
+  "Copy source": "ソースをコピー",
+  "Zoom to layer": "レイヤーにズーム",
+  "Similar layers": "類似レイヤー"
 }

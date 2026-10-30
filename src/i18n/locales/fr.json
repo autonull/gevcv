@@ -3004,5 +3004,8 @@
   "Copy link": "Copier le lien",
   "Copy Markdown": "Copier le Markdown",
   "Copy atlas (Markdown)": "Copier l’atlas (Markdown)",
-  "MD": "MD"
+  "MD": "MD",
+  "Copy source": "Copier la source",
+  "Zoom to layer": "Zoomer sur la couche",
+  "Similar layers": "Couches similaires"
 }

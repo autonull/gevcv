@@ -3074,5 +3074,8 @@
   "Copy link": "Скопіювати посилання",
   "Copy Markdown": "Скопіювати Markdown",
   "Copy atlas (Markdown)": "Скопіювати атлас (Markdown)",
-  "MD": "MD"
+  "MD": "MD",
+  "Copy source": "Копіювати джерело",
+  "Zoom to layer": "Наблизити до шару",
+  "Similar layers": "Схожі шари"
 }

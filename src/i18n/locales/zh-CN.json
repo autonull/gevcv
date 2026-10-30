@@ -2864,5 +2864,8 @@
   "Copy link": "复制链接",
   "Copy Markdown": "复制 Markdown",
   "Copy atlas (Markdown)": "复制图集（Markdown）",
-  "MD": "MD"
+  "MD": "MD",
+  "Copy source": "复制来源",
+  "Zoom to layer": "缩放至图层",
+  "Similar layers": "类似图层"
 }

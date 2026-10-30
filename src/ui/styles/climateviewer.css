@@ -266,6 +266,29 @@
   overflow-wrap: anywhere;
 }
 
+.data-cv-drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.data-cv-drawer-actions button {
+  padding: 2px 5px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.data-cv-drawer-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .data-cv-drawer a {
   color: #5ec4ff;
 }

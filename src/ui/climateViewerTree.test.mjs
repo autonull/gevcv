@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 import {
+  climateViewerFolderForLayer,
   climateViewerFolderLayerIds,
   climateViewerFolderState,
   createClimateViewerTree,
@@ -83,6 +84,17 @@ test('nested folders start collapsed but roots stay open', () => {
     if (row.kind === 'folder' && row.depth > 0) assert.equal(row.open, false);
     if (row.kind === 'layer') assert.ok(row.depth <= 1);
   }
+});
+
+test('a layer resolves to its deepest containing folder', () => {
+  const tree = createClimateViewerTree(catalog.tree, layers);
+  const folder = climateViewerFolderForLayer(tree, 'cv-live-usgs-all-hour');
+  assert.equal(folder.name, 'Earthquake');
+  assert.equal(folder.path, 'Alerts/Earthquake');
+  assert.equal(
+    climateViewerFolderForLayer(tree, 'missing-layer'),
+    null,
+  );
 });
 
 test('folder state reports partial and complete enablement', () => {

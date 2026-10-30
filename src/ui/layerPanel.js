@@ -14,6 +14,8 @@ import { createWeatherPanel } from './weatherPanel.js';
 import { CLIMATEVIEWER_PACKS } from '../layers/climateviewer/packs.js';
 import catalog from '../layers/climateviewer/catalog.json' with { type: 'json' };
 import {
+  climateViewerFolderForLayer,
+  climateViewerFolderLayerIds,
   climateViewerFolderState,
   createClimateViewerTree,
   defaultCollapsedFolders,
@@ -602,6 +604,7 @@ export class LayerPanel {
       });
     };
     const tree = createClimateViewerTree(catalog.tree ?? [], layers);
+    this._climateViewerTree = tree;
     const collapsed =
       this._climateViewerCollapsed ??
       (this._climateViewerCollapsed = defaultCollapsedFolders(tree));
@@ -649,7 +652,11 @@ export class LayerPanel {
       const token = renderToken;
       const query = filter.value.trim();
       const searching = query.length > 0;
-      const matches = matchesFor(query);
+      const similar = this._climateViewerSimilar;
+      const matches =
+        similar && query === similar.query
+          ? layers.filter((layer) => similar.ids.has(layer.id))
+          : matchesFor(query);
       count.textContent = `${matches.length} / ${layers.length}`;
       const enabled = layers.filter((layer) => this.isEnabled(layer.id)).length;
       clear.hidden = enabled === 0;
@@ -713,6 +720,7 @@ export class LayerPanel {
         this._bind(chip, 'click', () => {
           filter.value = query;
           this._climateViewerQuery = query;
+          this._climateViewerSimilar = null;
           filter.focus?.();
           renderList();
         });
@@ -722,6 +730,7 @@ export class LayerPanel {
     this._bind(details, 'toggle', onToggle);
     this._bind(filter, 'input', () => {
       this._climateViewerQuery = filter.value;
+      this._climateViewerSimilar = null;
       if (rendered) renderList();
     });
     this._bind(filter, 'keydown', (event) => {
@@ -729,6 +738,7 @@ export class LayerPanel {
         event.preventDefault();
         this._rememberClimateViewerSearch(filter.value);
         this._climateViewerQuery = filter.value;
+        this._climateViewerSimilar = null;
         renderRecents();
         const row = list.querySelector('.data-cv-row');
         const info = row?.querySelector?.('.data-cv-info');
@@ -866,6 +876,7 @@ export class LayerPanel {
       const controls = this._climateViewerControls;
       if (!controls) return;
       this._climateViewerQuery = id;
+      this._climateViewerSimilar = null;
       controls.filter.value = id;
       controls.renderList();
       requestAnimationFrame(() => {
@@ -1056,6 +1067,50 @@ export class LayerPanel {
 
       const actions = document.createElement('div');
       actions.className = 'data-cv-drawer-actions';
+      const sourceUrl = metadata.sourceUrl || metadata.providerUrl;
+      const copySource = document.createElement('button');
+      copySource.type = 'button';
+      copySource.className = 'data-cv-copy-source';
+      copySource.textContent = t('Copy source');
+      if (!sourceUrl) copySource.disabled = true;
+      this._bind(copySource, 'click', async () => {
+        if (!sourceUrl) return;
+        const ok = await copyText(sourceUrl, drawer.ownerDocument);
+        copySource.textContent = ok ? t('Copied') : t('Copy failed');
+        setTimeout(() => {
+          if (copySource.isConnected) copySource.textContent = t('Copy source');
+        }, 1500);
+      });
+      const zoomTo = document.createElement('button');
+      zoomTo.type = 'button';
+      zoomTo.className = 'data-cv-zoom';
+      zoomTo.textContent = t('Zoom to layer');
+      this._bind(zoomTo, 'click', () => {
+        this.zoomToLayer(layer.id);
+      });
+      const similar = document.createElement('button');
+      similar.type = 'button';
+      similar.className = 'data-cv-similar';
+      similar.textContent = t('Similar layers');
+      this._bind(similar, 'click', () => {
+        const controls = this._climateViewerControls;
+        const folder = climateViewerFolderForLayer(
+          this._climateViewerTree ?? [],
+          layer.id,
+        );
+        const query = folder?.name || this._climateViewerSimilarQuery(layer);
+        if (!controls || !query) return;
+        this._climateViewerSimilar = folder
+          ? {
+              query,
+              ids: new Set(climateViewerFolderLayerIds(folder)),
+            }
+          : null;
+        this._climateViewerQuery = query;
+        controls.filter.value = query;
+        controls.renderList();
+        controls.filter.focus?.();
+      });
       const copyLink = document.createElement('button');
       copyLink.type = 'button';
       copyLink.textContent = t('Copy link');
@@ -1083,7 +1138,7 @@ export class LayerPanel {
             copyMarkdown.textContent = t('Copy Markdown');
         }, 1500);
       });
-      actions.append(copyLink, copyMarkdown);
+      actions.append(copySource, zoomTo, similar, copyLink, copyMarkdown);
       drawer.appendChild(actions);
     };
     this._bind(info, 'click', () => {
@@ -1094,6 +1149,18 @@ export class LayerPanel {
     });
     row.appendChild(drawer);
     return row;
+  }
+
+  _climateViewerSimilarQuery(layer) {
+    const metadata = layer.metadata ?? {};
+    const category = Array.isArray(metadata.category)
+      ? metadata.category.filter(Boolean).at(-1)
+      : '';
+    if (category) return category;
+    const tags = Array.isArray(metadata.tags)
+      ? metadata.tags.find((tag) => typeof tag === 'string' && tag.trim())
+      : '';
+    return tags || layer.family || '';
   }
 
   _climateViewerBadges(layer) {

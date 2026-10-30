@@ -85,6 +85,18 @@ export function railFixture(onWrite = () => {}) {
           );
         },
       });
+      let textValue = '';
+      Object.defineProperty(node, 'textContent', {
+        configurable: true,
+        get() {
+          return textValue;
+        },
+        set(value) {
+          onWrite('textContent');
+          textValue = String(value);
+          if (value === '') node.children.length = 0;
+        },
+      });
       Object.defineProperty(node, 'innerHTML', {
         get() {
           return '';
@@ -113,10 +125,13 @@ export function railFixture(onWrite = () => {}) {
     },
   };
   const container = document.createElement('div');
-  const find = (root, predicate, includeRoot = true) => {
+  const find = (root, predicate, includeRoot = true, seen = new Set()) => {
+    if (seen.has(root)) return null;
+    seen.add(root);
+    if (seen.size > 100000) throw new Error('railFixture find cycle');
     if (includeRoot && predicate(root)) return root;
     for (const child of root.children) {
-      const result = find(child, predicate);
+      const result = find(child, predicate, true, seen);
       if (result) return result;
     }
     return null;

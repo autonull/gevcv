@@ -468,6 +468,83 @@ test('ClimateViewer search opens the first result, remembers it, and survives a 
   }
 });
 
+test('ClimateViewer drawer copies source, zooms, and filters similar layers', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  const previousNavigator = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'navigator',
+  );
+  globalThis.document = f.document;
+  const clipboard = [];
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { clipboard: { writeText: async (text) => clipboard.push(text) } },
+  });
+  const ids = [
+    'cv-live-usgs-all-hour',
+    'cv-live-usgs-45-today',
+    'cv-live-ngdc-hazards',
+  ];
+  const layers = ids.map((id) => ({
+    id,
+    name: catalog.layers[id].name,
+    icon: '*',
+    enabled: false,
+    showInTogglePanel: true,
+    panelGroup: 'ClimateViewer',
+    metadata: catalog.layers[id],
+    stats: {},
+  }));
+  const zoomed = [];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (id) => layers.find((layer) => layer.id === id)?.enabled,
+    setEnabled: async (id, value) => {
+      const layer = layers.find((entry) => entry.id === id);
+      if (layer) layer.enabled = value;
+    },
+    zoomToLayer: (id) => zoomed.push(id),
+  });
+  panel._climateViewerOpen = true;
+  const byClass = (name) =>
+    f.find((node) => node.className?.split(' ').includes(name));
+  try {
+    panel.mount(f.container);
+    const filter = byClass('data-cv-filter');
+    filter.value = 'usgs-all-hour';
+    filter.dispatchEvent(new Event('input'));
+    const row = f.find(
+      (node) => node.dataset.layerId === 'cv-live-usgs-all-hour',
+    );
+    row.querySelector('.data-cv-info').click();
+    const drawer = row.querySelector('.data-cv-drawer');
+    assert.equal(drawer.hidden, false);
+    byClass('data-cv-copy-source').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.deepEqual(clipboard, [catalog.layers[ids[0]].sourceUrl]);
+    byClass('data-cv-zoom').click();
+    assert.deepEqual(zoomed, [ids[0]]);
+    byClass('data-cv-similar').click();
+    assert.equal(filter.value, 'Earthquake');
+    assert.ok(
+      f.find((node) => node.dataset.layerId === 'cv-live-usgs-45-today'),
+    );
+    assert.equal(
+      f.find((node) => node.dataset.layerId === 'cv-live-ngdc-hazards'),
+      null,
+    );
+  } finally {
+    panel.destroy();
+    if (previousNavigator)
+      Object.defineProperty(globalThis, 'navigator', previousNavigator);
+    else delete globalThis.navigator;
+    globalThis.document = previousDocument;
+  }
+});
+
 test('the unavailable chip may abbreviate, but its accessible name keeps the full state', async () => {
   const { LayerPanel } = await import('./layerPanel.js');
   const attrs = new Map();

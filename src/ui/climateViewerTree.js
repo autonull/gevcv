@@ -32,6 +32,26 @@ export function createClimateViewerTree(catalogTree, layers) {
   return catalogTree.map((node) => walk(node, '')).filter(Boolean);
 }
 
+/** Deepest folder that directly contains a layer id, or null. */
+export function climateViewerFolderForLayer(nodes, layerId) {
+  const visit = (entries) => {
+    for (const entry of entries) {
+      if (entry.kind === 'layer') {
+        if (entry.id === layerId) return null;
+        continue;
+      }
+      const direct = entry.children.some(
+        (child) => child.kind === 'layer' && child.id === layerId,
+      );
+      if (direct) return entry;
+      const nested = visit(entry.children);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  return visit(nodes);
+}
+
 /** Every physical layer id below a folder node, in catalogue order. */
 export function climateViewerFolderLayerIds(node) {
   const ids = [];
