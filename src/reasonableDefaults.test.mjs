@@ -78,8 +78,8 @@ function managerForHash(hash) {
 // 2. Scope ON with 100% feather on a first run
 // ---------------------------------------------------------------------------
 
-test('first run opens with Scope ON and 100% feather at every default surface', () => {
-  assert.equal(isScopeMaskEnabled(), true, 'the live mask starts enabled');
+test('first run opens with Scope OFF and 100% feather at every default surface', () => {
+  assert.equal(isScopeMaskEnabled(), false, 'the live mask starts disabled');
   assert.equal(SCOPE_FEATHER_RATIO_DEFAULT, 1, 'owner preference 2026-10-25');
   assert.equal(getScopeMaskFeather(), 1,
     'and the live module starts there, not merely documents it');
@@ -92,15 +92,15 @@ test('first run opens with Scope ON and 100% feather at every default surface', 
   assert.match(indexHtml, /id="scope-feather-value"[^>]*>100%</,
     'index.html: and its readout agrees with the handle');
 
-  assert.match(indexHtml, /<input type="checkbox" id="scope-toggle"[^>]*\schecked\s*\/>/,
-    'the native Scope checkbox starts checked');
+  assert.doesNotMatch(indexHtml, /<input type="checkbox" id="scope-toggle"[^>]*\schecked\s*\/>/,
+    'the native Scope checkbox starts unchecked');
 
   // The link this session generates must describe the mask this session draws,
   // for the window before the first _syncShareState.
   assert.match(shareSource, /this\._scopeFeatherPct = 100;/,
     'sharelink.js: the generator starts from the same value the mask starts at');
   const params = managerForHash('')._buildHashParams();
-  assert.equal(params.get('sc'), '1');
+  assert.equal(params.get('sc'), '0');
   assert.equal(params.get('scf'), '100');
 });
 

@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKER_PIXELS, applyMarkerOverrides } from './vector.js';
+import {
+  MARKER_PIXELS,
+  applyMarkerOverrides,
+  applyTerrainOcclusion,
+} from './vector.js';
 
 function billboardSource() {
   return {
@@ -30,6 +34,23 @@ test('marker overrides use a fixed 32px box and clamp scale to 0.25–4', () => 
     markerScale: 9,
   });
   assert.equal(source.entities.values[0].billboard.scale, 4);
+});
+
+test('terrain occlusion re-enables depth tests on screen-space graphics', () => {
+  const source = {
+    entities: {
+      values: [
+        { billboard: { disableDepthTestDistance: Infinity } },
+        { label: { disableDepthTestDistance: Infinity } },
+        { point: { disableDepthTestDistance: Infinity } },
+      ],
+    },
+  };
+  applyTerrainOcclusion(source);
+  for (const entity of source.entities.values) {
+    const graphic = entity.billboard ?? entity.label ?? entity.point;
+    assert.equal(graphic.disableDepthTestDistance, 0);
+  }
 });
 
 test('layers without a marker icon keep their billboard styling', () => {

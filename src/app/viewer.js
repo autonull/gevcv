@@ -147,6 +147,9 @@ export function createApplicationViewer({ container, creditContainer }) {
     viewer.scene.globe.maximumScreenSpaceError = 3;
     // Fog is decorative atmosphere, not map information. Presets may enable it.
     viewer.scene.fog.enabled = false;
+    // Markers must disappear behind the horizon and terrain; otherwise city
+    // labels from the far side of the Earth read as if they were overhead.
+    viewer.scene.globe.depthTestAgainstTerrain = true;
     // A phone pinch spans fewer screen pixels than desktop zoom gestures.
     // Keep Cesium's distance-aware zoom and collision limits, with less travel
     // required on touch-first screens. Mouse/trackpad sensitivity stays native.

@@ -1,6 +1,8 @@
 import * as Cesium from 'cesium';
 import { describeLoadFailure } from '../imagery.js';
 import {
+  applyTerrainOcclusion,
+  createMarkerPopup,
   loadVectorDataSource,
   PROGRESSIVE_ENTITY_THRESHOLD,
   readAnalystRecords,
@@ -29,6 +31,7 @@ export function createVectorFamily(
 ) {
   let viewer = null;
   let dataSource = null;
+  let markerPopup = null;
   let controller = null;
   let enabled = false;
   let generation = 0;
@@ -105,6 +108,10 @@ export function createVectorFamily(
         return false;
       }
       dataSource = source;
+      markerPopup = createMarkerPopup(viewer, {
+        layer: definition,
+        dataSource,
+      });
       if (useProgressive) {
         progressive = true;
         const step = Math.max(1, Math.floor(progressiveChunk));
@@ -143,6 +150,8 @@ export function createVectorFamily(
     generation += 1;
     controller?.abort();
     controller = null;
+    markerPopup?.destroy();
+    markerPopup = null;
     if (dataSource && viewer) {
       viewer.dataSources.remove(dataSource, true);
       dataSource = null;
