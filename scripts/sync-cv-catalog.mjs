@@ -65,10 +65,15 @@ const stripHtml = (value) =>
 
 const TOKEN_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
+/**
+ * ClimateViewer layers take tokens from the far end of the two-character space,
+ * so upstream allocations from the near end never collide with them.
+ */
 function* tokenCandidates() {
-  for (const digit of TOKEN_ALPHABET.slice(0, 10)) yield digit;
-  for (const first of TOKEN_ALPHABET) {
-    for (const second of TOKEN_ALPHABET) yield `${first}${second}`;
+  for (let first = TOKEN_ALPHABET.length - 1; first >= 10; first -= 1) {
+    for (let second = TOKEN_ALPHABET.length - 1; second >= 0; second -= 1) {
+      yield `${TOKEN_ALPHABET[first]}${TOKEN_ALPHABET[second]}`;
+    }
   }
 }
 
@@ -79,13 +84,12 @@ function existingTokens() {
 }
 
 function writeShareLinkLedger(layersInOrder) {
-  const { rows, occupied } = existingTokens();
+  // Only core allocations occupy the namespace: ClimateViewer tokens are
+  // recomputed from the catalog each run, so they stay reproducible.
+  const { occupied } = existingTokens();
   const tokens = new Map();
-  // Reuse previously generated tokens so the ledger stays stable across syncs.
-  for (const [id, token] of rows) tokens.set(id, token);
   const candidates = tokenCandidates();
   for (const layer of layersInOrder) {
-    if (tokens.has(layer.id)) continue;
     let token = candidates.next().value;
     while (occupied.has(token)) token = candidates.next().value;
     occupied.add(token);
