@@ -259,6 +259,7 @@ export class LayerPanel {
     onHiddenRefresh = () => {},
     zoomToLayer = () => false,
     getCameraHeight = () => null,
+    setSpotlightLayer = () => {},
     retryLayer,
     weatherClock,
     climateViewerClock,
@@ -269,6 +270,7 @@ export class LayerPanel {
     this.climateViewerHealth = climateViewerHealth;
     this.zoomToLayer = zoomToLayer;
     this.getCameraHeight = getCameraHeight;
+    this.setSpotlightLayer = setSpotlightLayer;
     this.retryLayer =
       retryLayer ??
       (async (id) => {
@@ -352,6 +354,10 @@ export class LayerPanel {
     this._stopClimateViewerClockPlay?.();
     this._climateViewerClockUnsub?.();
     this._climateViewerClockUnsub = null;
+    if (this._climateViewerSpotlightId) {
+      this._climateViewerSpotlightId = null;
+      this.setSpotlightLayer(null);
+    }
   }
   _renderToggles() {
     if (this._destroyed || !this._toggleContainer) return;
@@ -1639,7 +1645,14 @@ export class LayerPanel {
       const open = drawer.hidden;
       drawer.hidden = !open;
       info.setAttribute('aria-expanded', String(open));
-      if (open) fill();
+      if (open) {
+        fill();
+        this._climateViewerSpotlightId = layer.id;
+        this.setSpotlightLayer(layer.id);
+      } else if (this._climateViewerSpotlightId === layer.id) {
+        this._climateViewerSpotlightId = null;
+        this.setSpotlightLayer(null);
+      }
     });
     row.appendChild(drawer);
     return row;

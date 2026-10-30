@@ -39,6 +39,36 @@ export function createVectorFamily(
   let rendered = 0;
   let progressive = false;
   let lastUpdate = null;
+  let spotlightAlpha = 1;
+  const spotlightColors = new WeakMap();
+
+  function applySpotlight(source = dataSource) {
+    if (!source?.entities?.values) return;
+    const now = Cesium.JulianDate.now();
+    for (const entity of source.entities.values) {
+      for (const key of ['billboard', 'point', 'label']) {
+        const graphic = entity[key];
+        if (!graphic) continue;
+        const property = key === 'label' ? graphic.fillColor : graphic.color;
+        if (!property) continue;
+        const current = property.getValue?.(now) ?? property;
+        if (typeof current?.withAlpha !== 'function') continue;
+        let original = spotlightColors.get(graphic);
+        if (!original) {
+          original = current.clone?.() ?? current;
+          spotlightColors.set(graphic, original);
+        }
+        const color = original.withAlpha(original.alpha * spotlightAlpha);
+        if (key === 'label') graphic.fillColor = color;
+        else graphic.color = color;
+      }
+    }
+  }
+
+  function setSpotlightOpacity(alpha) {
+    spotlightAlpha = Math.min(Math.max(Number(alpha) || 1, 0), 1);
+    applySpotlight();
+  }
 
   async function attach(target) {
     viewer = target;
@@ -68,6 +98,7 @@ export function createVectorFamily(
         rendered = 0;
       }
       source.show = true;
+      applySpotlight(source);
       await viewer.dataSources.add(source);
       if (epoch !== generation || !enabled) {
         viewer.dataSources.remove(source, true);
@@ -88,6 +119,7 @@ export function createVectorFamily(
         }
         progressive = false;
       }
+      applySpotlight(source);
       count = total;
       rendered = source.entities.values.length;
       lastUpdate = Date.now();
@@ -151,6 +183,7 @@ export function createVectorFamily(
     detach,
     refresh,
     zoomTo,
+    setSpotlightOpacity,
     records: (max) => (dataSource ? readAnalystRecords(dataSource, max) : []),
     stats: () => ({
       count,

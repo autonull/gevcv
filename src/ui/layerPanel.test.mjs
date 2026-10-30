@@ -1150,3 +1150,51 @@ test('enabling a global CV layer at city zoom offers a zoom-out', async () => {
     globalThis.document = previousDocument;
   }
 });
+
+test('opening a CV drawer spotlights that layer and closing restores all', async () => {
+  const { LayerPanel } = await import('./layerPanel.js');
+  const { railFixture } = await import('./railTestFixture.mjs');
+  const f = railFixture();
+  const previousDocument = globalThis.document;
+  globalThis.document = f.document;
+  const id = 'cv-live-usgs-all-hour';
+  const layers = [
+    {
+      id,
+      name: catalog.layers[id].name,
+      icon: '*',
+      enabled: false,
+      showInTogglePanel: true,
+      panelGroup: 'ClimateViewer',
+      metadata: catalog.layers[id],
+      stats: {},
+    },
+  ];
+  const calls = [];
+  const panel = new LayerPanel({
+    getLayers: () => layers,
+    isEnabled: (layerId) =>
+      layers.find((layer) => layer.id === layerId)?.enabled,
+    setEnabled: async () => {},
+    setSpotlightLayer: (layerId) => calls.push(layerId),
+  });
+  panel._climateViewerOpen = true;
+  try {
+    panel.mount(f.container);
+    const filter = f.find((node) =>
+      node.className?.split(' ').includes('data-cv-filter'),
+    );
+    filter.value = id;
+    filter.dispatchEvent(new Event('input'));
+    const info = f
+      .find((node) => node.dataset.layerId === id)
+      .querySelector('.data-cv-info');
+    info.click();
+    assert.deepEqual(calls, [id]);
+    info.click();
+    assert.deepEqual(calls, [id, null]);
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});

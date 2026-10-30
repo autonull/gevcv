@@ -326,3 +326,33 @@ test('a time-enabled imagery layer rebuilds when the clock advances', () => {
   assert.equal(viewer.imagery.length, 0);
   assert.equal(listeners.size, 0);
 });
+
+test('spotlight opacity dims imagery layers and restores them', async () => {
+  const viewer = fakeViewer();
+  const layer = { alpha: 1 };
+  const family = createImageryFamily(
+    { ...definition, family: 'gibs', flags: { ...definition.flags } },
+    { providerFor: () => ({}), createImagery: () => layer },
+  );
+  await family.attach(viewer);
+  family.setSpotlightOpacity(0.35);
+  assert.equal(layer.alpha, 0.35);
+  family.setSpotlightOpacity(1);
+  assert.equal(layer.alpha, 1);
+});
+
+test('spotlight opacity dims vector billboards and restores their colour', async () => {
+  const viewer = fakeViewer();
+  const source = fakeSource(1);
+  source.entities.values = [
+    { id: 'a', billboard: { color: Cesium.Color.RED.withAlpha(0.8) } },
+  ];
+  const family = createVectorFamily(definition, {
+    loadVector: async () => source,
+  });
+  await family.attach(viewer);
+  family.setSpotlightOpacity(0.35);
+  assert.ok(Math.abs(source.entities.values[0].billboard.color.alpha - 0.28) < 1e-9);
+  family.setSpotlightOpacity(1);
+  assert.ok(Math.abs(source.entities.values[0].billboard.color.alpha - 0.8) < 1e-9);
+});

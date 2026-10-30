@@ -79,6 +79,13 @@ export class LayerPresentation {
         zoomToLayer: (id) =>
           this.manager.layers.get(id)?.module?.zoomTo?.() ?? false,
         getCameraHeight: () => this.getCameraHeight(),
+        setSpotlightLayer: (id) => {
+          for (const [layerId, entry] of this.manager.layers ?? []) {
+            const module = entry?.module;
+            if (typeof module?.setSpotlightOpacity !== 'function') continue;
+            module.setSpotlightOpacity(id && layerId !== id ? 0.35 : 1);
+          }
+        },
       });
     return this._panel;
   }

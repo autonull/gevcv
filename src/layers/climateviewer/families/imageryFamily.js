@@ -24,8 +24,12 @@ export function createImageryFamily(
   let error = null;
   let remedy = null;
   let lastUpdate = null;
+  let spotlightAlpha = 1;
 
   const timeParameter = () => (timeEnabled && clock ? clock.isoDate() : null);
+  const applySpotlight = () => {
+    if (imageryLayer) imageryLayer.alpha = spotlightAlpha;
+  };
 
   function removeLayer() {
     if (imageryLayer && viewer) viewer.imageryLayers.remove(imageryLayer, true);
@@ -45,6 +49,7 @@ export function createImageryFamily(
     try {
       const provider = providerFor(definition, { time: timeParameter() });
       imageryLayer = createImagery(provider);
+      applySpotlight();
       viewer.imageryLayers.add(imageryLayer);
       status = 'ok';
       error = null;
@@ -85,12 +90,18 @@ export function createImageryFamily(
     return true;
   }
 
+  function setSpotlightOpacity(alpha) {
+    spotlightAlpha = Math.min(Math.max(Number(alpha) || 1, 0), 1);
+    applySpotlight();
+  }
+
   return {
     kind: 'imagery',
     attach,
     detach,
     refresh,
     zoomTo,
+    setSpotlightOpacity,
     records: () => [],
     stats: () => ({
       count: imageryLayer ? 1 : 0,
