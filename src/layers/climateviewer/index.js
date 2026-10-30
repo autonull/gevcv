@@ -84,6 +84,17 @@ export function climateViewerTraits(id) {
   return layer.traits ?? { nameIsData: false, voice: 'toggle' };
 }
 
+/** True when the layer has local assets (GeoJSON/KML data or marker icons) cached under /cv/. */
+export function climateViewerHasLocalAssets(id) {
+  const layer = catalog.layers[id];
+  if (!layer) return false;
+  return (
+    (layer.url && layer.url.startsWith('/cv/')) ||
+    (layer.markerIcon && layer.markerIcon.startsWith('/cv/')) ||
+    (layer.sourceUrl && layer.sourceUrl.startsWith('/cv/'))
+  );
+}
+
 /** Definitions for one catalog category, in catalog order. */
 export function climateViewerLayersIn(categoryKey) {
   return CLIMATEVIEWER_LAYERS.filter(

@@ -3099,5 +3099,8 @@
   "Health checked {date}": "Стан перевірено {date}",
   "Animate": "Анімувати",
   "Stop": "Зупинити",
-  "ClimateViewer": "ClimateViewer"
+  "ClimateViewer": "ClimateViewer",
+  "OFFLINE": "АВТОНОМНИЙ",
+  "Available offline": "Доступно офлайн",
+  "CACHED": "У КЕШІ"
 }

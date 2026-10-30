@@ -2889,5 +2889,8 @@
   "Health checked {date}": "健康檢查日期：{date}",
   "Animate": "動畫",
   "Stop": "停止",
-  "ClimateViewer": "ClimateViewer"
+  "ClimateViewer": "ClimateViewer",
+  "OFFLINE": "離線",
+  "Available offline": "離線可用",
+  "CACHED": "已快取"
 }

@@ -26,6 +26,7 @@ import {
   readClimateViewerProxyUrl,
   writeClimateViewerProxyUrl,
 } from '../layers/climateviewer/settings.js';
+import { climateViewerHasLocalAssets } from '../layers/climateviewer/index.js';
 import {
   climateViewerFolderForLayer,
   climateViewerFolderLayerIds,
@@ -2506,6 +2507,26 @@ export class LayerPanel {
     const health = layer.metadata?.health?.status;
     if (health && health !== 'ok')
       badges.push({ kind: `health health-${health}`, label: 'H' });
+    // Offline indicators
+    const hasLocalAssets = climateViewerHasLocalAssets(layer.id);
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine;
+    if (hasLocalAssets) {
+      if (!isOnline) {
+        // Show offline badge instead of cors/unavailable when offline
+        badges.push({
+          kind: 'offline',
+          label: msg('OFFLINE'),
+          title: msg('Available offline'),
+        });
+      } else {
+        // Show "Available offline" indicator when online
+        badges.push({
+          kind: 'cached',
+          label: msg('CACHED'),
+          title: msg('Available offline'),
+        });
+      }
+    }
     return badges;
   }
 

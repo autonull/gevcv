@@ -102,9 +102,10 @@ test('build helper does not discover environment values or construct local provi
       config.define['import.meta.env.GOOGLE_MAPS_API_KEY'],
       undefined,
     );
+    // PWA plugin added at the end (vite-plugin-pwa)
     assert.deepEqual(
-      config.plugins.slice(4).map((plugin) => plugin.name),
-      ['embed-framing', 'panel-build'],
+      config.plugins.slice(4).map((plugin) => plugin.name || 'vite-plugin-pwa'),
+      ['embed-framing', 'panel-build', 'vite-plugin-pwa'],
     );
   } finally {
     if (before === undefined) delete process.env.GOOGLE_MAPS_API_KEY;
@@ -127,19 +128,27 @@ test('root config retains existing named exports and standalone provider order',
     standaloneProviders.indexOf('gemini-live-proxy'),
     standaloneProviders.indexOf('openai-realtime-proxy') + 1,
   );
+  // local-mcp is not part of localProviderPlugins; filter it out for comparison.
+  const providerNames = standaloneProviders.filter(
+    (name) => name !== 'gemini-live-proxy' && name !== 'local-mcp'
+  );
   assert.deepEqual(
-    standaloneProviders.filter((name) => name !== 'gemini-live-proxy'),
+    providerNames,
     providers.localProviderPlugins().map((plugin) => plugin.name),
   );
-  assert.equal(config.plugins.at(-7).name, 'gev-key-setup');
+  // PWA plugin added at end shifts indices by 1 vs pre-PWA.
+  assert.equal(config.plugins.at(-8).name, 'gev-key-setup');
   // Token fallback follows real providers and local MCP before the API 404.
-  assert.equal(config.plugins.at(-6).name, 'local-mcp');
-  assert.equal(config.plugins.at(-5).name, 'google-token-unavailable');
-  assert.equal(config.plugins.at(-4).name, 'api-not-found');
+  assert.equal(config.plugins.at(-7).name, 'local-mcp');
+  assert.equal(config.plugins.at(-6).name, 'google-token-unavailable');
+  assert.equal(config.plugins.at(-5).name, 'api-not-found');
   // Config-only, so it sits after the provider slice rather than in it.
-  assert.equal(config.plugins.at(-3).name, 'gev-unwatched-runtime-dirs');
-  assert.equal(config.plugins.at(-2).name, 'embed-framing');
-  assert.equal(config.plugins.at(-1).name, 'panel-build');
+  assert.equal(config.plugins.at(-4).name, 'gev-unwatched-runtime-dirs');
+  assert.equal(config.plugins.at(-3).name, 'embed-framing');
+  assert.equal(config.plugins.at(-2).name, 'panel-build');
+  // vite-plugin-pwa returns an array-like plugin without a name property.
+  const lastPlugin = config.plugins.at(-1);
+  assert.ok(!lastPlugin.name, 'last plugin is vite-plugin-pwa (no name)');
 });
 
 test('directories the server writes while it runs are kept out of the dev watcher', () => {

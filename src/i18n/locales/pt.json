@@ -3029,5 +3029,8 @@
   "Health checked {date}": "Saúde verificada em {date}",
   "Animate": "Animar",
   "Stop": "Parar",
-  "ClimateViewer": "ClimateViewer"
+  "ClimateViewer": "ClimateViewer",
+  "OFFLINE": "OFFLINE",
+  "Available offline": "Disponível offline",
+  "CACHED": "EM CACHE"
 }

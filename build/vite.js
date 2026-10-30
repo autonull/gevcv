@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { applicationHtmlPlugin } from './application-html.js';
 import cesium from 'vite-plugin-cesium';
+import { VitePWA } from 'vite-plugin-pwa';
 import { DEFAULT_ALLOWED_HOSTS, hostCheckPlugin } from './allowedHosts.js';
 import { embedFramingPlugin } from './embed-framing.js';
 import { panelBuildPlugin } from './panel.js';
@@ -159,6 +160,98 @@ export function createBrowserViteConfig({
       ...plugins,
       embedFramingPlugin(),
       panelBuildPlugin(),
+      // PWA: precache shell + CV catalog/health, runtime cache /cv with LRU 250MB
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['logo.svg', 'icons/icon-192.png', 'icons/icon-512.png'],
+        manifest: {
+          id: '.',
+          name: "God's Eye View",
+          short_name: "God's Eye",
+          description: "Live spatial intelligence in the browser.",
+          start_url: '.',
+          scope: '.',
+          display: 'standalone',
+          orientation: 'any',
+          background_color: '#0a0a0f',
+          theme_color: '#0a0a0f',
+          icons: [
+            { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+            {
+              src: 'icons/icon-512-maskable.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+          shortcuts: [
+            {
+              name: 'Browse ClimateViewer layers',
+              short_name: 'CV Layers',
+              description: 'Open the ClimateViewer layer catalog',
+              url: '/?panel=layers',
+              icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }],
+            },
+          ],
+        },
+        workbox: {
+          // Precache the shell, CV catalog, and health JSON
+          globPatterns: ['**/*.{js,css,html,svg,png,json,webmanifest,wasm}'],
+          globIgnores: ['**/mapillary-*.css', '**/mapillary.*.js'],
+          maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB
+          runtimeCaching: [
+            {
+              // Cache ClimateViewer layer assets (/cv/...)
+              urlPattern: ({ url }) => url.pathname.startsWith('/cv/'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'cv-assets',
+                expiration: {
+                  maxEntries: 5000,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                  purgeOnQuotaError: true,
+                },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              // Cache API responses for layer health/catalog
+              urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'api-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              // Cache Cesium/WMS/WMTS tile requests
+              urlPattern: ({ url }) =>
+                url.hostname.includes('cesium.com') ||
+                url.hostname.includes('tileserver') ||
+                url.pathname.includes('/tiles/') ||
+                url.pathname.match(/\.(png|jpg|jpeg|webp|pbf|mvt)$/),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'tile-cache',
+                expiration: {
+                  maxEntries: 10000,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                  purgeOnQuotaError: true,
+                },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+          ],
+        },
+        devOptions: {
+          enabled: false, // Don't run PWA in dev mode
+        },
+      }),
     ],
     ...(publicDir === undefined ? {} : { publicDir }),
     // A production build must not clean the dependency cache a running dev

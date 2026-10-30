@@ -2889,5 +2889,8 @@
   "Health checked {date}": "ヘルスチェック日: {date}",
   "Animate": "アニメーション",
   "Stop": "停止",
-  "ClimateViewer": "ClimateViewer"
+  "ClimateViewer": "ClimateViewer",
+  "OFFLINE": "オフライン",
+  "Available offline": "オフラインで利用可能",
+  "CACHED": "キャッシュ済み"
 }

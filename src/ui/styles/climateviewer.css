@@ -651,6 +651,17 @@
   color: #ffb248;
 }
 
+.data-cv-badge-offline {
+  background: rgb(255 92 112 / 22%);
+  color: #ff5c70;
+  font-weight: 700;
+}
+
+.data-cv-badge-cached {
+  background: rgb(120 220 160 / 18%);
+  color: #78dca0;
+}
+
 .data-cv-drawer {
   display: grid;
   gap: 3px;
