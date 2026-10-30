@@ -3069,5 +3069,10 @@
   "Cyclone request timed out": "Минув час очікування запиту циклонів",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "Шари ClimateViewer у цьому посиланні належать до іншого каталогу"
+  "ClimateViewer layers in this link are from a different catalog": "Шари ClimateViewer у цьому посиланні належать до іншого каталогу",
+  "Copied": "Скопійовано",
+  "Copy link": "Скопіювати посилання",
+  "Copy Markdown": "Скопіювати Markdown",
+  "Copy atlas (Markdown)": "Скопіювати атлас (Markdown)",
+  "MD": "MD"
 }

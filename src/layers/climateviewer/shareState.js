@@ -206,6 +206,7 @@ export class ClimateViewerStateSync {
       storage = globalThis.localStorage,
       catalogHash = CLIMATEVIEWER_CATALOG_HASH,
       order = CLIMATEVIEWER_LAYER_ORDER,
+      starterLayerIds = [],
     } = {},
   ) {
     if (!dataManager?.subscribe || !dataManager?.setEnabled)
@@ -216,6 +217,9 @@ export class ClimateViewerStateSync {
     this.catalogHash = catalogHash;
     this.order = order;
     this.orderSet = new Set(order);
+    this.starterLayerIds = (starterLayerIds ?? []).filter((id) =>
+      this.orderSet.has(id),
+    );
     this._source = 'defaults';
     this._destroyed = false;
     this._unsubscribe = null;
@@ -248,6 +252,10 @@ export class ClimateViewerStateSync {
         expectedHash: this.catalogHash,
       });
       if (selected) this._source = 'local';
+      else if (this.starterLayerIds.length) {
+        selected = this.starterLayerIds;
+        this._source = 'starter';
+      }
     } else {
       this._source = 'legacy-share';
     }

@@ -2929,5 +2929,10 @@
   "route proxy error": "Fehler des Routen-Proxys",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "ClimateViewer-Ebenen in diesem Link stammen aus einem anderen Katalog"
+  "ClimateViewer layers in this link are from a different catalog": "ClimateViewer-Ebenen in diesem Link stammen aus einem anderen Katalog",
+  "Copied": "Kopiert",
+  "Copy link": "Link kopieren",
+  "Copy Markdown": "Markdown kopieren",
+  "Copy atlas (Markdown)": "Atlas kopieren (Markdown)",
+  "MD": "MD"
 }

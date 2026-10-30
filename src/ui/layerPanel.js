@@ -11,6 +11,11 @@ import {
 } from './layerNames.js';
 export { localizeLayerName } from './layerNames.js';
 import { createWeatherPanel } from './weatherPanel.js';
+import { CLIMATEVIEWER_PACKS } from '../layers/climateviewer/packs.js';
+import {
+  climateViewerLayerDeepLink,
+  climateViewerMarkdownTable,
+} from '../layers/climateviewer/atlasLinks.js';
 import { translateFeedError, translateStatusLine } from './statusText.js';
 import {
   formatNumber,
@@ -34,6 +39,34 @@ const FEED_STATE_LABEL_KEYS = Object.freeze({
 
 function lifecycleStateLabel(lifecycleState) {
   return t(lifecycleState === 'enabling' ? msg('ENABLING') : msg('DISABLING'));
+}
+
+async function copyText(text, ownerDocument) {
+  if (!text) return false;
+  try {
+    if (globalThis.navigator?.clipboard?.writeText) {
+      await globalThis.navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the selection fallback.
+  }
+  const doc = ownerDocument ?? globalThis.document;
+  if (!doc?.body || typeof doc.execCommand !== 'function') return false;
+  const area = doc.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  doc.body.appendChild(area);
+  area.select();
+  let copied = false;
+  try {
+    copied = doc.execCommand('copy');
+  } finally {
+    area.remove();
+  }
+  return copied;
 }
 
 // Presentation order is independent of catalog registration and startup order.
@@ -206,9 +239,11 @@ export class LayerPanel {
     hasRowControls,
     subscribeRowControls,
     onHiddenRefresh = () => {},
+    zoomToLayer = () => false,
     weatherClock,
   }) {
     this.weatherClock = weatherClock;
+    this.zoomToLayer = zoomToLayer;
     this.getAll = getLayers;
     this.isEnabled = isEnabled;
     this.setEnabled = setEnabled;
@@ -467,7 +502,34 @@ export class LayerPanel {
     clear.type = 'button';
     clear.className = 'data-cv-clear';
     clear.textContent = t('Clear');
-    toolbar.append(filter, count, clear);
+    const copyAtlas = document.createElement('button');
+    copyAtlas.type = 'button';
+    copyAtlas.className = 'data-cv-copy-atlas';
+    copyAtlas.textContent = msg('MD');
+    copyAtlas.setAttribute('aria-label', t('Copy atlas (Markdown)'));
+    copyAtlas.title = t('Copy atlas (Markdown)');
+    toolbar.append(filter, count, clear, copyAtlas);
+
+    const packBar = document.createElement('div');
+    packBar.className = 'data-cv-packs';
+    for (const pack of CLIMATEVIEWER_PACKS) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'data-cv-pack';
+      button.textContent = pack.name;
+      button.title = pack.description;
+      this._bind(button, 'click', async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try {
+          await this._applyClimateViewerPack(pack);
+        } finally {
+          button.disabled = false;
+          if (!this._destroyed && this._generation === generation) renderList();
+        }
+      });
+      packBar.appendChild(button);
+    }
 
     const legend = document.createElement('div');
     legend.className = 'data-cv-legend';
@@ -488,7 +550,7 @@ export class LayerPanel {
 
     const list = document.createElement('div');
     list.className = 'data-cv-list';
-    body.append(toolbar, legend, list);
+    body.append(packBar, toolbar, legend, list);
     details.appendChild(body);
     this._toggleContainer.appendChild(details);
 
@@ -593,6 +655,17 @@ export class LayerPanel {
         if (!this._destroyed && this._generation === generation) renderList();
       }
     });
+    this._bind(copyAtlas, 'click', async () => {
+      const ok = await copyText(
+        climateViewerMarkdownTable(layers),
+        details.ownerDocument,
+      );
+      copyAtlas.textContent = ok ? t('Copied') : t('Copy failed');
+      setTimeout(() => {
+        if (copyAtlas.isConnected) copyAtlas.textContent = msg('MD');
+      }, 1500);
+    });
+    this._climateViewerControls = { details, filter, list, renderList };
     const ownerDocument = details.ownerDocument;
     if (ownerDocument) {
       this._bind(ownerDocument, 'keydown', (event) => {
@@ -613,6 +686,54 @@ export class LayerPanel {
       rendered = true;
       renderList();
     }
+  }
+
+  /** Apply a named pack by diffing every CV toggle against the pack set. */
+  async _applyClimateViewerPack(pack) {
+    const target = new Set(pack.layers);
+    const operations = [];
+    for (const layer of this.getAll()) {
+      if (!layer.id?.startsWith?.('cv-')) continue;
+      const want = target.has(layer.id);
+      if (want === this.isEnabled(layer.id)) continue;
+      operations.push(
+        this.setEnabled(layer.id, want, { origin: 'user' }).catch(() => false),
+      );
+    }
+    await Promise.allSettled(operations);
+  }
+
+  /** `?layer=<id>`: enable, open the CV section and drawer, and fly there. */
+  async openClimateViewerLayer(id) {
+    const layer = this.getAll().find((entry) => entry.id === id);
+    if (!layer) return false;
+    if (!this.isEnabled(id)) {
+      try {
+        await this.setEnabled(id, true, { origin: 'user' });
+      } catch {
+        return false;
+      }
+    }
+    this.zoomToLayer(id);
+    this._climateViewerOpen = true;
+    this._refreshTogglePanel();
+    requestAnimationFrame(() => {
+      const controls = this._climateViewerControls;
+      if (!controls) return;
+      controls.filter.value = id;
+      controls.renderList();
+      requestAnimationFrame(() => {
+        const row = controls.list.querySelector(
+          `.data-cv-row[data-layer-id="${id}"]`,
+        );
+        if (!row) return;
+        row.scrollIntoView?.({ block: 'center' });
+        const info = row.querySelector('.data-cv-info');
+        const drawer = row.querySelector('.data-cv-drawer');
+        if (info && drawer?.hidden) info.click();
+      });
+    });
+    return true;
   }
 
   _createClimateViewerRow(layer, generation) {
@@ -733,6 +854,38 @@ export class LayerPanel {
       add(parts.join(' · '));
       if (layer.stats?.error) add(layer.stats.error, 'data-cv-drawer-error');
       if (layer.stats?.remedy) add(layer.stats.remedy, 'data-cv-drawer-remedy');
+
+      const actions = document.createElement('div');
+      actions.className = 'data-cv-drawer-actions';
+      const copyLink = document.createElement('button');
+      copyLink.type = 'button';
+      copyLink.textContent = t('Copy link');
+      this._bind(copyLink, 'click', async () => {
+        const ok = await copyText(
+          climateViewerLayerDeepLink(layer.id),
+          drawer.ownerDocument,
+        );
+        copyLink.textContent = ok ? t('Copied') : t('Copy failed');
+        setTimeout(() => {
+          if (copyLink.isConnected) copyLink.textContent = t('Copy link');
+        }, 1500);
+      });
+      const copyMarkdown = document.createElement('button');
+      copyMarkdown.type = 'button';
+      copyMarkdown.textContent = t('Copy Markdown');
+      this._bind(copyMarkdown, 'click', async () => {
+        const ok = await copyText(
+          climateViewerMarkdownTable([layer]),
+          drawer.ownerDocument,
+        );
+        copyMarkdown.textContent = ok ? t('Copied') : t('Copy failed');
+        setTimeout(() => {
+          if (copyMarkdown.isConnected)
+            copyMarkdown.textContent = t('Copy Markdown');
+        }, 1500);
+      });
+      actions.append(copyLink, copyMarkdown);
+      drawer.appendChild(actions);
     };
     this._bind(info, 'click', () => {
       const open = drawer.hidden;

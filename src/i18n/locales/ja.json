@@ -2859,5 +2859,10 @@
   "Cyclone request timed out": "サイクロンのリクエストがタイムアウトしました",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "このリンクのClimateViewerレイヤーは別のカタログのものです"
+  "ClimateViewer layers in this link are from a different catalog": "このリンクのClimateViewerレイヤーは別のカタログのものです",
+  "Copied": "コピーしました",
+  "Copy link": "リンクをコピー",
+  "Copy Markdown": "Markdownをコピー",
+  "Copy atlas (Markdown)": "アトラスをコピー（Markdown）",
+  "MD": "MD"
 }

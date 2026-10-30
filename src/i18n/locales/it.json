@@ -2999,5 +2999,10 @@
   "Cyclone request timed out": "La richiesta dei cicloni è andata in timeout",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "I livelli ClimateViewer in questo link provengono da un altro catalogo"
+  "ClimateViewer layers in this link are from a different catalog": "I livelli ClimateViewer in questo link provengono da un altro catalogo",
+  "Copied": "Copiato",
+  "Copy link": "Copia link",
+  "Copy Markdown": "Copia Markdown",
+  "Copy atlas (Markdown)": "Copia atlante (Markdown)",
+  "MD": "MD"
 }

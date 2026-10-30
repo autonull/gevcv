@@ -3069,5 +3069,10 @@
   "route proxy error": "ошибка прокси маршрутов",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "Слои ClimateViewer в этой ссылке относятся к другому каталогу"
+  "ClimateViewer layers in this link are from a different catalog": "Слои ClimateViewer в этой ссылке относятся к другому каталогу",
+  "Copied": "Скопировано",
+  "Copy link": "Скопировать ссылку",
+  "Copy Markdown": "Скопировать Markdown",
+  "Copy atlas (Markdown)": "Скопировать атлас (Markdown)",
+  "MD": "MD"
 }

@@ -64,6 +64,8 @@ export class LayerPresentation {
         onHiddenRefresh: () => {
           this.pendingVisible = true;
         },
+        zoomToLayer: (id) =>
+          this.manager.layers.get(id)?.module?.zoomTo?.() ?? false,
       });
     return this._panel;
   }

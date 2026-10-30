@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "disaster-watch",
+      "name": "Disaster Watch",
+      "description": "Active hazards, earthquakes, volcanoes, fire detections, and flood warnings.",
+      "layers": [
+        "cv-live-pdc-integrated-active-hazards",
+        "cv-live-usgs-all-today",
+        "cv-live-kml-volcano",
+        "cv-live-modis-thermal",
+        "cv-live-wms-femad",
+        "cv-weather-noaa-short-term-warnings",
+        "cv-weather-hc-nc-observed-track",
+        "cv-weather-kml-ussfdflood"
+      ]
+    },
+    {
+      "id": "energy-grid",
+      "name": "Energy Grid",
+      "description": "Coal, gas, oil, nuclear, and renewable generation sites.",
+      "layers": [
+        "cv-pollution-coal-power-now",
+        "cv-pollution-coal-ash",
+        "cv-pollution-us-shale-gas",
+        "cv-pollution-oil-spills",
+        "cv-pollution-methane-release",
+        "cv-pollution-bw-reactor",
+        "cv-pollution-gc-reactor",
+        "cv-mrm-mrm-133",
+        "cv-mrm-mrm-134"
+      ]
+    },
+    {
+      "id": "surveillance-atlas",
+      "name": "Surveillance Atlas",
+      "description": "Spy facilities, cables, fusion centers, drones, prisons, and radar.",
+      "layers": [
+        "cv-bigbrother-f05",
+        "cv-bigbrother-f06",
+        "cv-bigbrother-f07",
+        "cv-bigbrother-f08",
+        "cv-bigbrother-prisons",
+        "cv-bigbrother-drone-nofly",
+        "cv-bigbrother-surface-to-air",
+        "cv-electromagnetic-jss",
+        "cv-electromagnetic-haarp"
+      ]
+    },
+    {
+      "id": "climate-baseline",
+      "name": "Climate Baseline",
+      "description": "Climate classification, change, drought, methane, and a world basemap.",
+      "layers": [
+        "cv-basemaps-world-imagery",
+        "cv-mrm-mrm-114",
+        "cv-mrm-mrm-115",
+        "cv-weather-usdroughtoutlook",
+        "cv-weather-kml-usdrought",
+        "cv-pollution-methane-release",
+        "cv-weather-obs-meteoceanhydro-insitu-pts-geolinks-air"
+      ]
+    }
+  ]
+}

@@ -2859,5 +2859,10 @@
   "route proxy error": "路线代理出错",
   "Filter ClimateViewer layers": "Filter ClimateViewer layers",
   "ClimateViewer ({count})": "ClimateViewer ({count})",
-  "ClimateViewer layers in this link are from a different catalog": "此链接中的 ClimateViewer 图层来自其他目录"
+  "ClimateViewer layers in this link are from a different catalog": "此链接中的 ClimateViewer 图层来自其他目录",
+  "Copied": "已复制",
+  "Copy link": "复制链接",
+  "Copy Markdown": "复制 Markdown",
+  "Copy atlas (Markdown)": "复制图集（Markdown）",
+  "MD": "MD"
 }

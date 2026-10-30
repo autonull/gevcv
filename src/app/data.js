@@ -68,6 +68,7 @@ export function createApplicationData({
   }
   presentation.mount(document.getElementById('data-toggles'));
   styleManager.attachDataManager(dataManager);
+  styleManager.attachLayerPanel?.(presentation.panel);
   defer(createCyberSonarScene(viewer, dataManager));
 
   return { dataManager, catalog, presentation };

@@ -158,6 +158,21 @@ function createManager(initial = []) {
   };
 }
 
+test('first launch applies the starter set and writes it once', async () => {
+  const starter = [CLIMATEVIEWER_LAYER_ORDER[0], CLIMATEVIEWER_LAYER_ORDER[2]];
+  const manager = createManager();
+  const storage = memoryStorage();
+  const sync = new ClimateViewerStateSync(manager, null, {
+    storage,
+    starterLayerIds: starter,
+  });
+  await sync.start();
+  assert.equal(manager.isEnabled(starter[0]), true);
+  assert.equal(manager.isEnabled(starter[1]), true);
+  assert.deepEqual(decodeClimateViewerStorageState(storage.getItem(CLIMATEVIEWER_STATE_STORAGE_KEY)), starter);
+  sync.destroy();
+});
+
 test('share restore is exclusive, and user toggles persist the bitset', async () => {
   const a = CLIMATEVIEWER_LAYER_ORDER[0];
   const b = CLIMATEVIEWER_LAYER_ORDER[1];

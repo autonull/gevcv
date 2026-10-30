@@ -1,5 +1,7 @@
 import { LayerStateCoordinator } from '../data/layerStateCoordinator.js';
 import { ClimateViewerStateSync } from '../layers/climateviewer/shareState.js';
+import { climateViewerDeepLinkLayerId } from '../layers/climateviewer/atlasLinks.js';
+import { starterClimateViewerLayerIds } from '../layers/climateviewer/packs.js';
 import { stampInitialShareGesture } from '../navigationPolicy.js';
 import { canPresentDeferredStatusNotice } from '../loadingFeedback.js';
 import { t, msg, formatDate } from '../i18n/index.js';
@@ -102,6 +104,7 @@ export class ShareRestoration {
     feedback,
     updateFeedback,
     applyFollowOffset = null,
+    openClimateViewerLayer = null,
   }) {
     Object.assign(this, {
       viewer,
@@ -111,6 +114,7 @@ export class ShareRestoration {
       showStatus,
       feedback,
       updateFeedback,
+      openClimateViewerLayer,
       // (entity, offset) => disposer: frame a followed entity from a shared
       // follow offset (shareFollow.js).
       applyFollowOffset,
@@ -217,6 +221,20 @@ export class ShareRestoration {
     this.shareLinkManager?.watchNavigation?.((state) =>
       this._restoreNavigatedShare(state),
     );
+    void this._applyClimateViewerDeepLink();
+  }
+
+  /** `?layer=<id>` wins after any share restore, then enables and frames it. */
+  async _applyClimateViewerDeepLink() {
+    const id = climateViewerDeepLinkLayerId(globalThis.location?.search);
+    if (!id || typeof this.openClimateViewerLayer !== 'function') return;
+    await this._initialShareRestorePromise.catch(() => null);
+    if (this._disposed) return;
+    try {
+      await this.openClimateViewerLayer(id);
+    } catch (error) {
+      console.warn(`[Share] deep link ${id} failed:`, error);
+    }
   }
 
   /**
@@ -374,6 +392,7 @@ export class ShareRestoration {
       this._climateViewerState = new ClimateViewerStateSync(
         this._dataManager,
         this.shareLinkManager,
+        { starterLayerIds: starterClimateViewerLayerIds() },
       );
       this._climateViewerRestorePromise = this._climateViewerState.start({
         shareEnabledLayerIds: this._initialShareState

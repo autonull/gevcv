@@ -172,6 +172,8 @@ export class StyleManager extends ShellFacade {
       updateFeedback: () => this._updateGlobalLoadingFeedback(),
       applyFollowOffset: (entity, offset) =>
         applyShareFollowOffset(viewer, entity, offset),
+      openClimateViewerLayer: (id) =>
+        this._layerPanel?.openClimateViewerLayer?.(id) ?? false,
     });
 
     this._visualSettings = new VisualSettings({
@@ -1248,6 +1250,11 @@ export class StyleManager extends ShellFacade {
         ),
     });
     return true;
+  }
+
+  /** Keep the layer panel reachable for `?layer=` deep links. */
+  attachLayerPanel(panel) {
+    this._layerPanel = panel ?? null;
   }
 
   /**
