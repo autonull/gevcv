@@ -7,6 +7,7 @@ import {
   PROGRESSIVE_ENTITY_THRESHOLD,
   readAnalystRecords,
 } from '../vector.js';
+import { registerPickOwner, unregisterPickOwner } from '../../../data/pickRegistry.js';
 
 const PROGRESSIVE_CHUNK = 500;
 
@@ -14,6 +15,18 @@ const nextFrame = () =>
   new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
+
+/**
+ * Build a pick-ownership predicate for the ClimateViewer data source.
+ * Entities in the data source carry string ids; we check membership by id.
+ */
+function makePickPredicate(dataSource) {
+  return (pickedId) => {
+    if (!dataSource || !pickedId) return false;
+    const entity = dataSource.entities.getById(pickedId);
+    return entity !== undefined;
+  };
+}
 
 /**
  * Shared lifecycle for KML and GeoJSON families. Downloads are generation-
@@ -27,6 +40,8 @@ export function createVectorFamily(
     loadVector = loadVectorDataSource,
     progressiveThreshold = PROGRESSIVE_ENTITY_THRESHOLD,
     progressiveChunk = PROGRESSIVE_CHUNK,
+    health = null,
+    metadata = {},
   } = {},
 ) {
   let viewer = null;
@@ -108,8 +123,15 @@ export function createVectorFamily(
         return false;
       }
       dataSource = source;
+      // Register pick ownership so sibling layers don't steal CV picks.
+      registerPickOwner(definition.id, makePickPredicate(dataSource));
+      // Merge definition with health/metadata for popup
+      const layerForPopup = {
+        ...definition,
+        metadata: { ...definition.metadata, ...metadata, health },
+      };
       markerPopup = createMarkerPopup(viewer, {
-        layer: definition,
+        layer: layerForPopup,
         dataSource,
       });
       if (useProgressive) {
@@ -150,6 +172,8 @@ export function createVectorFamily(
     generation += 1;
     controller?.abort();
     controller = null;
+    // Unregister pick ownership before removing data source.
+    unregisterPickOwner(definition.id);
     markerPopup?.destroy();
     markerPopup = null;
     if (dataSource && viewer) {

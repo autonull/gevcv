@@ -62,32 +62,125 @@ export function createMarkerPopup(viewer, { layer, dataSource }) {
   popup.className = 'cv-marker-popup';
   popup.hidden = true;
   popup.setAttribute('role', 'dialog');
+  
   const title = documentRef.createElement('strong');
   const source = documentRef.createElement('span');
   source.className = 'cv-marker-source';
   const body = documentRef.createElement('p');
+  const attribution = documentRef.createElement('span');
+  attribution.className = 'cv-marker-attribution';
+  const health = documentRef.createElement('span');
+  health.className = 'cv-marker-health';
+  
+  // Action buttons
+  const copyCoords = documentRef.createElement('button');
+  copyCoords.type = 'button';
+  copyCoords.className = 'cv-marker-copy-coords';
+  copyCoords.textContent = t('Copy coordinates');
+  copyCoords.setAttribute('aria-label', t('Copy coordinates'));
+  
+  const zoomTo = documentRef.createElement('button');
+  zoomTo.type = 'button';
+  zoomTo.className = 'cv-marker-zoom-to';
+  zoomTo.textContent = t('Zoom to');
+  zoomTo.setAttribute('aria-label', t('Zoom to'));
+  
   const close = documentRef.createElement('button');
   close.type = 'button';
   close.className = 'cv-marker-close';
   close.textContent = t('Close');
   close.setAttribute('aria-label', t('Close'));
-  popup.append(title, source, body, close);
+  
+  const actions = documentRef.createElement('div');
+  actions.className = 'cv-marker-actions';
+  actions.append(copyCoords, zoomTo, close);
+  
+  popup.append(title, source, body, attribution, health, actions);
   viewer.container.appendChild(popup);
 
   const hide = () => {
     popup.hidden = true;
   };
+  
+  const getEntityPosition = (entity) => {
+    const now = Cesium.JulianDate.now();
+    return entity.position?.getValue?.(now);
+  };
+  
+  const formatCoords = (position) => {
+    if (!position) return '';
+    const cartographic = Cesium.Cartographic.fromCartesian(position);
+    const lat = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6);
+    const lon = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6);
+    const height = cartographic.height >= 0 ? `, ${Math.round(cartographic.height)}m` : '';
+    return `${lat}, ${lon}${height}`;
+  };
+  
   const show = (entity, position) => {
     const now = Cesium.JulianDate.now();
     title.textContent = String(entity.name ?? entity.id ?? '');
-    source.textContent = String(layer?.sourceUrl ?? layer?.provider?.url ?? '');
+    
+    // Source as clickable link if URL
+    const sourceUrl = layer?.sourceUrl ?? layer?.provider?.url ?? '';
+    if (sourceUrl && sourceUrl.startsWith('http')) {
+      source.innerHTML = `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a>`;
+    } else {
+      source.textContent = sourceUrl;
+    }
+    
     body.textContent =
       plainText(entity.description?.getValue?.(now)) ||
       String(entity.properties?.description?.getValue?.(now) ?? '').trim() ||
       t('No description');
+    
+    // Attribution
+    const attr = layer?.attribution ?? layer?.provider?.attribution ?? '';
+    if (attr) {
+      attribution.textContent = attr;
+      attribution.hidden = false;
+    } else {
+      attribution.hidden = true;
+    }
+    
+    // Health status from catalog
+    const healthStatus = layer?.metadata?.health?.status;
+    if (healthStatus && healthStatus !== 'ok') {
+      health.textContent = `Health: ${healthStatus}`;
+      health.hidden = false;
+    } else {
+      health.hidden = true;
+    }
+    
+    // Copy coordinates action
+    const entityPos = getEntityPosition(entity);
+    copyCoords.onclick = async () => {
+      const coords = formatCoords(entityPos);
+      if (coords) {
+        try {
+          await navigator.clipboard.writeText(coords);
+          copyCoords.textContent = t('Copied!');
+          setTimeout(() => { copyCoords.textContent = t('Copy coordinates'); }, 1500);
+        } catch {
+          copyCoords.textContent = t('Copy failed');
+          setTimeout(() => { copyCoords.textContent = t('Copy coordinates'); }, 1500);
+        }
+      }
+    };
+    
+    // Zoom to action
+    zoomTo.onclick = () => {
+      if (entityPos) {
+        viewer.camera.flyTo({
+          destination: entityPos,
+          duration: 1.2,
+        });
+      }
+      hide();
+    };
+    
     popup.hidden = false;
-    const width = 320;
-    const height = popup.offsetHeight || 160;
+    const width = 340;
+    const height = popup.offsetHeight || 180;
     const left = Math.max(
       8,
       Math.min(position.x + 14, viewer.container.clientWidth - width - 8),

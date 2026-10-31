@@ -126,6 +126,7 @@ export function createClimateViewerLayer(
 ) {
   if (!definition?.id)
     throw new TypeError('A ClimateViewer definition is required');
+  const healthResult = health.results[definition.id] ?? null;
   const family = familyFor(definition, {
     clock,
     resolveAsset,
@@ -133,6 +134,20 @@ export function createClimateViewerLayer(
     loadVector,
     providerFor,
     createImagery,
+    health: healthResult,
+    metadata: {
+      cvId: definition.cvId,
+      description: definition.description,
+      sourceUrl: definition.sourceUrl,
+      category: definition.category.join(' › '),
+      sublayers: definition.sublayers,
+      flags: definition.flags,
+      family: definition.family,
+      role: definition.role,
+      providerUrl: definition.url,
+      traits: definition.traits,
+      health: healthResult,
+    },
   });
   const refreshInterval = climateViewerRefreshInterval(definition);
   const isBasemap = definition.role === 'basemap';
@@ -241,13 +256,18 @@ export function createClimateViewerLayer(
     async update() {
       if (isBasemap)
         return !destroyed && mapStack?.getActiveId?.() === definition.id;
-      if (!enabled || !viewer) return false;
-      const { status } = family.stats();
+      if (!enabled || !viewer) {
+        console.warn(`[ClimateViewer] ${definition.id} update: enabled=${enabled}, viewer=${!!viewer}`);
+        return false;
+      }
+      const stats = family.stats?.();
+      const { status } = stats || {};
       if (status === 'ok' || status === 'empty') {
         if (refreshInterval > 0) return family.refresh?.() ?? true;
         return true;
       }
       if (status === 'loading') return true;
+      console.warn(`[ClimateViewer] ${definition.id} update: status=${status}, re-attaching`);
       return family.attach(viewer);
     },
 
