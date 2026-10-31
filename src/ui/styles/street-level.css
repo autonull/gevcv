@@ -14,6 +14,12 @@
 #street-level-panel .panel-glow {
   position: absolute;
   inset: -18px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Decorative glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #street-level-panel .panel-glow {
   background: radial-gradient(
     ellipse at center,
     rgba(5, 203, 99, 0.16) 0%,
@@ -21,7 +27,6 @@
   );
   filter: blur(16px);
   opacity: 0.25;
-  pointer-events: none;
 }
 
 .street-level-panel-inner {
@@ -33,14 +38,21 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.46) rgba(255, 255, 255, 0.06);
+}
+
+/* Decorative backdrop blur and inset highlight — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .street-level-panel-inner {
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
     0 1px 0 rgba(255, 255, 255, 0.06) inset;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 212, 255, 0.46) rgba(255, 255, 255, 0.06);
 }
 
 /* Class-qualified, not id-qualified, so a theme's header rule still wins. */
@@ -328,10 +340,14 @@ html:not([lang='en']) .sl-meta-row .sl-nearest-btn {
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-top-color: var(--sl-green);
+}
+
+/* Decorative spinner animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .sl-viewer-placeholder::after {
   animation: sl-spin 0.9s linear infinite;
 }
 
-@keyframes sl-spin {
+[data-visual-mode="styled"] @keyframes sl-spin {
   to {
     transform: rotate(360deg);
   }

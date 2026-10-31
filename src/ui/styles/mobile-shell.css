@@ -42,6 +42,10 @@ body.mobile-shell #mobile-tab-bar {
     var(--mobile-bottom-inset) max(4px, env(safe-area-inset-left, 0px));
   background: rgba(8, 14, 22, 0.94);
   border-top: 1px solid var(--glass-border);
+}
+
+/* Decorative backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] body.mobile-shell #mobile-tab-bar {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }

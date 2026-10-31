@@ -22,13 +22,19 @@
   border: 1px solid rgba(54, 220, 255, 0.34);
   border-radius: 0.38rem;
   box-shadow:
+    0 0.85rem 2rem rgba(0, 0, 0, 0.58);
+  text-align: left;
+  transform: translateX(-50%);
+  transform-origin: bottom center;
+}
+
+/* Decorative glow, backdrop blur, and entrance animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #gev-voice-control .gev-voice-card {
+  box-shadow:
     0 0.85rem 2rem rgba(0, 0, 0, 0.58),
     0 0 1.2rem rgba(0, 212, 255, 0.08);
   backdrop-filter: blur(24px) saturate(1.3);
   -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  text-align: left;
-  transform: translateX(-50%);
-  transform-origin: bottom center;
   animation: gev-voice-card-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -321,9 +327,7 @@
   margin: -0.95rem 0 0 -0.95rem;
   border: 1.5px solid rgba(120, 235, 255, 0.95);
   border-radius: 50%;
-  box-shadow: 0 0 0.7rem rgba(0, 212, 255, 0.35);
   pointer-events: none;
-  animation: gev-pointer-reticle-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .gev-pointer-reticle::before,
@@ -352,27 +356,36 @@
 
 .gev-pointer-reticle[data-target='ground'] {
   border-color: rgba(255, 196, 107, 0.85);
-  box-shadow: 0 0 0.7rem rgba(255, 196, 107, 0.3);
 }
 
 .gev-pointer-reticle[data-target='ground']::before {
   background: rgba(255, 196, 107, 0.9);
 }
 
-.gev-pointer-reticle[hidden],
-body.ui-clean-view .gev-pointer-reticle,
-body.recording-mode .gev-pointer-reticle {
-  display: none;
+/* Decorative glow and entrance animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .gev-pointer-reticle {
+  box-shadow: 0 0 0.7rem rgba(0, 212, 255, 0.35);
+  animation: gev-pointer-reticle-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Scale only: a frame caught at the animation start still shows the mark. */
-@keyframes gev-pointer-reticle-in {
+[data-visual-mode="styled"] .gev-pointer-reticle[data-target='ground'] {
+  box-shadow: 0 0 0.7rem rgba(255, 196, 107, 0.3);
+}
+
+[data-visual-mode="styled"] @keyframes gev-pointer-reticle-in {
   from {
     transform: scale(1.6);
   }
   to {
     transform: scale(1);
   }
+}
+
+/* Functional hiding in Clean-UI and recording modes — NOT decorative, always active. */
+.gev-pointer-reticle[hidden],
+body.ui-clean-view .gev-pointer-reticle,
+body.recording-mode .gev-pointer-reticle {
+  display: none;
 }
 
 @media (max-width: 900px) {
@@ -409,15 +422,22 @@ body.recording-mode .gev-pointer-reticle {
   border: 1px solid rgba(54, 220, 255, 0.34);
   border-radius: 0.6rem;
   box-shadow:
-    0 0.85rem 2rem rgba(0, 0, 0, 0.58),
-    0 0 1.2rem rgba(0, 212, 255, 0.08);
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    0 0.85rem 2rem rgba(0, 0, 0, 0.58);
   color-scheme: dark;
   font: 0.75rem/1.45 var(--font-sans);
   text-align: left;
   transform: translateX(-50%);
 }
+
+/* Decorative glow and backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #gev-voice-control .gev-voice-panel {
+  box-shadow:
+    0 0.85rem 2rem rgba(0, 0, 0, 0.58),
+    0 0 1.2rem rgba(0, 212, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+}
+
 :root[data-ui-theme='cyber'] #gev-voice-control .gev-voice-panel {
   background-color: var(--cyber-panel-surface);
   background-image: var(--cyber-panel-surface-detail);

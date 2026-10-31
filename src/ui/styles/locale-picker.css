@@ -47,15 +47,21 @@
   border: 1px solid rgba(54, 220, 255, 0.38);
   border-radius: 0.42rem;
   box-shadow:
-    0 0.4rem 1.6rem rgba(0, 0, 0, 0.5),
-    0 0 1.2rem rgba(0, 212, 255, 0.07);
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    0 0.4rem 1.6rem rgba(0, 0, 0, 0.5);
   cursor: pointer;
   transition:
     border-color var(--transition-fast),
     background var(--transition-fast),
     transform var(--transition-fast);
+}
+
+/* Decorative accent glow and backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .locale-picker-button {
+  box-shadow:
+    0 0.4rem 1.6rem rgba(0, 0, 0, 0.5),
+    0 0 1.2rem rgba(0, 212, 255, 0.07);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
 
 .locale-picker-button:hover,
@@ -115,6 +121,13 @@
     rgba(7, 17, 25, 0.96);
   border: 1px solid rgba(54, 220, 255, 0.42);
   border-radius: 0.55rem;
+  box-shadow:
+    0 1rem 3rem rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+/* Decorative accent glow and backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .locale-picker-popup {
   box-shadow:
     0 1rem 3rem rgba(0, 0, 0, 0.65),
     0 0 2rem rgba(0, 212, 255, 0.08),

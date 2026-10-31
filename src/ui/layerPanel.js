@@ -271,12 +271,14 @@ export class LayerPanel {
     climateViewerHealth,
     createClimateViewerLayers,
     resolveAsset,
+    registerLayer,
   }) {
     this.weatherClock = weatherClock;
     this.climateViewerClock = climateViewerClock;
     this.climateViewerHealth = climateViewerHealth;
     this.createClimateViewerLayers = createClimateViewerLayers;
     this._resolveAsset = resolveAsset;
+    this._registerLayer = registerLayer;
     this.zoomToLayer = zoomToLayer;
     this.getCameraHeight = getCameraHeight;
     this.setSpotlightLayer = setSpotlightLayer;
@@ -735,6 +737,13 @@ export class LayerPanel {
         resolveAsset: this._resolveAsset,
         proxyUrl: readClimateViewerProxyUrl(globalThis.window?.localStorage),
       });
+      // Register real ClimateViewer layers with dataManager so they participate
+      // in lifecycle management, horizon culling, and pick ownership.
+      if (this._registerLayer) {
+        for (const layer of layers) {
+          this._registerLayer(layer);
+        }
+      }
       layerById = new Map(layers.map((layer) => [layer.id, layer]));
       tree = createClimateViewerTree(catalog.tree ?? [], layers);
       this._climateViewerTree = tree;

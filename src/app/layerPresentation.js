@@ -52,6 +52,7 @@ export class LayerPresentation {
         climateViewerHealth: this.climateViewerHealth,
         createClimateViewerLayers: this.createClimateViewerLayers,
         resolveAsset: this.resolveAsset,
+        registerLayer: (layer) => this.manager.register(layer),
         retryLayer: async (id) => {
           await this.manager.setEnabled(id, false, { origin: 'user' });
           return this.manager.setEnabled(id, true, { origin: 'user' });

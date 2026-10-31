@@ -100,7 +100,6 @@
     rgba(0, 212, 255, 0.18) 58%,
     transparent
   );
-  box-shadow: 0 0 7px rgba(0, 212, 255, 0.22);
 }
 
 #right-context-rail [data-panel-id]:not(.collapsed) .panel-divider {
@@ -110,12 +109,23 @@
     rgba(0, 212, 255, 0.18) 58%,
     transparent
   );
+}
+
+/* Decorative divider glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #left-panel-stack > [data-panel-id]:not(.collapsed) .panel-divider,
+[data-visual-mode="styled"] #right-context-rail [data-panel-id]:not(.collapsed) .panel-divider {
   box-shadow: 0 0 7px rgba(0, 212, 255, 0.22);
 }
 
 #scene-panel .panel-glow {
   position: absolute;
   inset: -18px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Decorative glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #scene-panel .panel-glow {
   background: radial-gradient(
     ellipse at center,
     rgba(0, 212, 255, 0.16) 0%,
@@ -123,7 +133,6 @@
   );
   filter: blur(16px);
   opacity: 0.25;
-  pointer-events: none;
 }
 
 .scene-panel-inner {
@@ -135,6 +144,13 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 24px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+/* Decorative backdrop blur and inset highlight — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .scene-panel-inner {
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   box-shadow:
@@ -299,6 +315,10 @@ html:not([lang='en']) #scene-panel .scene-controls .scene-btn {
   justify-content: flex-end;
   padding-right: 6px;
   transition: width 100ms linear;
+}
+
+/* Decorative text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #scene-progress-fill {
   text-shadow: 0 0 6px rgba(0, 212, 255, 0.6);
 }
 
@@ -329,8 +349,12 @@ html:not([lang='en']) #scene-panel .scene-controls .scene-btn {
   border: 1px solid rgba(0, 212, 255, 0.36);
   border-radius: 999px;
   padding: 6px 14px;
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.55);
   pointer-events: none;
+}
+
+/* Decorative text glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #scene-runtime {
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.55);
 }
 
 #scene-runtime.active {

@@ -25,10 +25,7 @@
   border-radius: 0.65rem;
   box-shadow:
     0 1.4rem 4.5rem rgba(0, 0, 0, 0.72),
-    0 0 2.5rem rgba(0, 212, 255, 0.09),
     inset 0 0 0 1px rgba(255, 255, 255, 0.025);
-  backdrop-filter: blur(28px) saturate(1.25);
-  -webkit-backdrop-filter: blur(28px) saturate(1.25);
   opacity: 0;
   transform: translate(-50%, calc(-50% + 0.8rem)) scale(0.985);
   transition:
@@ -37,6 +34,16 @@
   /* Inert until revealed AND again while fading out, so a click during the
      dismiss animation cannot launch a second mission behind the fade. */
   pointer-events: none;
+}
+
+/* Decorative glow and backdrop blur — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] #first-run-launcher {
+  box-shadow:
+    0 1.4rem 4.5rem rgba(0, 0, 0, 0.72),
+    0 0 2.5rem rgba(0, 212, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
 }
 
 /* An AUTHOR `display` on this id beats the UA's `[hidden] { display: none }` in
@@ -63,8 +70,12 @@
     rgba(54, 220, 255, 0.8),
     transparent
   );
-  box-shadow: 0 0 1rem rgba(54, 220, 255, 0.45);
   pointer-events: none;
+}
+
+/* Decorative glow — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .first-run-scanline {
+  box-shadow: 0 0 1rem rgba(54, 220, 255, 0.45);
 }
 
 .first-run-header,
@@ -379,8 +390,9 @@ body.scene-playback-mode #first-run-launcher {
    rather than as a rendering seam. Gated on `data-scrollable`, which the JS sets
    only when the list ACTUALLY overflows — a fade on a list that fits would
    promise content that is not there, which is the opposite of the affordance
-   it is meant to be. Decorative only: the list scrolls under it. */
-.first-run-choices[data-scrollable='true'] {
+   it is meant to be. Decorative only: the list scrolls under it.
+   GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] .first-run-choices[data-scrollable='true'] {
   -webkit-mask-image: linear-gradient(
     to bottom,
     #000 calc(100% - 1.4rem),
@@ -395,8 +407,9 @@ body.scene-playback-mode #first-run-launcher {
 
 /* Scrolled to the end, there is nothing left to promise, so the fade lifts.
    Browsers without scroll-driven animations keep the static fade, which is
-   still honest — there IS more list, it is just above rather than below. */
-@supports (animation-timeline: scroll(self block)) {
+   still honest — there IS more list, it is just above rather than below.
+   GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] @supports (animation-timeline: scroll(self block)) {
   .first-run-choices[data-scrollable='true'] {
     animation: first-run-scroll-fade linear both;
     animation-timeline: scroll(self block);
@@ -404,7 +417,8 @@ body.scene-playback-mode #first-run-launcher {
   }
 }
 
-@keyframes first-run-scroll-fade {
+/* Decorative scroll fade animation — GATED: only in styled visual mode (opt-in). */
+[data-visual-mode="styled"] @keyframes first-run-scroll-fade {
   to {
     -webkit-mask-image: linear-gradient(to bottom, #000 100%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 100%, transparent 100%);
