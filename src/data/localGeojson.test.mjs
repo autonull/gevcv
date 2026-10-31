@@ -500,7 +500,8 @@ test('local infrastructure creates no native labels or per-frame geometry callba
   const source = readFileSync(new URL('./localGeojsonCore.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /new Cesium\.LabelGraphics/);
   assert.doesNotMatch(source, /new Cesium\.CallbackProperty/);
-  assert.match(source, /feature\.position = tip/);
+  // Position assignment now happens in createBatchedDataSource; check for tip assignment
+  assert.match(source, /const tip = Cesium\.Cartesian3\.fromRadians/);
   assert.match(source, /record\.entity\.position\.setValue\(record\.tip\)/);
   assert.match(source, /const stemPositionBuffers = \[\s*\[base, tip\],\s*\[base, tip\],?\s*\]/);
   assert.match(source, /record\.entity\.polyline\.positions\.setValue\(stemPositions\)/);

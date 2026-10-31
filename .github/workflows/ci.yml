@@ -148,3 +148,60 @@ jobs:
 
       - name: Build production bundle
         run: npm run build
+
+  browser-smoke:
+    name: Browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+      GEV_REQUIRE_ALLOCATION_GATE: '0'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Start preview server
+        run: |
+          npx vite preview --port 4173 --strictPort > preview.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            curl -sf http://localhost:4173/ > /dev/null && exit 0
+            sleep 2
+          done
+          cat preview.log
+          exit 1
+
+      - name: Boot smoke test (qa:boot)
+        run: npm run qa:boot -- --url http://localhost:4173
+
+      - name: Horizon culling test (qa:horizon-culling)
+        run: npm run qa:horizon-culling -- --url http://localhost:4173 --layer earthquakes
+
+      - name: Offline reload test (qa:offline-reload)
+        run: npm run qa:offline-reload -- --url http://localhost:4173
+
+      - name: Preview server log
+        if: failure()
+        run: cat preview.log
+
+      - name: Upload QA artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-smoke-evidence
+          path: qa-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

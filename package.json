@@ -50,6 +50,7 @@
     "test:track": "node scripts/track-regression.mjs",
     "qa:boot": "node scripts/qa-boot.mjs",
     "qa:horizon-culling": "node scripts/qa-horizon-culling.mjs",
+    "qa:offline-reload": "node scripts/qa-offline-reload.mjs",
     "qa:perf-budget": "node scripts/qa-perf-budget.mjs",
     "qa:map-source-tray": "node scripts/qa-map-source-tray.mjs",
     "qa:street-level": "node scripts/qa-street-level.mjs",

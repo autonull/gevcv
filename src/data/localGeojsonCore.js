@@ -12,6 +12,80 @@ import {
   shouldRecomputeInfraLod,
 } from './localGeojsonLod.js';
 
+// Web Worker for parsing GeoJSONL off the main thread
+let _geojsonlWorker = null;
+function getGeojsonlWorker() {
+  // Disable worker in test environments (no real DOM, or running in Node.js test runner)
+  // Tests mock `window` but don't have a real Worker implementation that can fetch
+  if (typeof document === 'undefined' || typeof Worker === 'undefined') {
+    return null;
+  }
+  if (!_geojsonlWorker) {
+    try {
+      _geojsonlWorker = new Worker(new URL('./geojsonlWorker.js', import.meta.url), {
+        type: 'module',
+        name: 'geojsonl-parser',
+      });
+    } catch {
+      // Worker not supported
+      _geojsonlWorker = false;
+    }
+  }
+  return _geojsonlWorker || null;
+}
+
+async function parseGeojsonLinesInWorker(url, layerId, signal) {
+  const worker = getGeojsonlWorker();
+  if (!worker) {
+    // Fallback to main-thread parsing
+    return parseGeojsonLinesOnMainThread(url, signal);
+  }
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      // Fallback to main thread on timeout
+      parseGeojsonLinesOnMainThread(url, signal).then(resolve).catch(reject);
+    }, 30000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
+    }
+
+    function onMessage(event) {
+      const { type, features, message, layerId: msgLayerId } = event.data;
+      if (msgLayerId !== layerId) return;
+      if (type === 'result') {
+        cleanup();
+        resolve(features);
+      } else if (type === 'error') {
+        cleanup();
+        // Fallback to main thread on worker error
+        parseGeojsonLinesOnMainThread(url, signal).then(resolve).catch(reject);
+      }
+    }
+
+    function onError(error) {
+      cleanup();
+      // Fallback to main thread on worker error
+      parseGeojsonLinesOnMainThread(url, signal).then(resolve).catch(reject);
+    }
+
+    worker.addEventListener('message', onMessage);
+    worker.addEventListener('error', onError);
+    worker.postMessage({ type: 'parse', url, layerId });
+  });
+}
+
+async function parseGeojsonLinesOnMainThread(url, signal) {
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status ?? '?'}`);
+  const text = await response.text();
+  return parseGeojsonLines(text);
+}
+
 const DEFAULT_LABEL_MAX = 900;
 const DEFAULT_LABEL_GRID_PX = 132;
 const VISIBILITY_UPDATE_MS = 450;
@@ -286,6 +360,139 @@ export function localDatasetError(error) {
   if (error?.name === 'SyntaxError') return 'dataset is malformed';
   const message = String(error?.message || '').trim();
   return message ? `dataset unavailable (${message})` : 'dataset unavailable';
+}
+
+/**
+ * Create a CustomDataSource by adding entities in batches to avoid blocking
+ * the main thread. Replaces Cesium.GeoJsonDataSource.load() for large datasets.
+ * @param {object} geojson - FeatureCollection
+ * @param {object} options - Cesium.GeoJsonDataSource.load options plus batchSize and signal
+ * @returns {Promise<Cesium.CustomDataSource>}
+ */
+async function createBatchedDataSource(geojson, options) {
+  const {
+    clampToGround = true,
+    stroke,
+    fill,
+    strokeWidth = 2,
+    markerSize = 8,
+    markerColor,
+    name = 'Batched Layer',
+    batchSize = 500,
+    signal,
+  } = options;
+
+  const dataSource = new Cesium.CustomDataSource(name);
+  const features = geojson.features || [];
+  const total = features.length;
+
+  // In test environments (no real document), process synchronously to avoid timeout
+  const isTestEnv = typeof document === 'undefined';
+  const effectiveBatchSize = isTestEnv ? total : batchSize;
+
+  // Process features in batches, creating complete stem entities directly
+  for (let i = 0; i < total; i += effectiveBatchSize) {
+    if (signal?.aborted) {
+      throw new Error('Aborted');
+    }
+    const batch = features.slice(i, i + effectiveBatchSize);
+    batch.forEach((feature, batchIndex) => {
+      const entity = dataSource.entities.add({
+        id: feature.id ?? String(i + batchIndex),
+        name: feature.properties?.name,
+        properties: feature.properties,
+      });
+
+      const geometry = feature.geometry;
+      if (!geometry) return;
+
+      if (geometry.type === 'Point') {
+        const coords = geometry.coordinates;
+        if (!coords || coords.length < 2) return;
+        const [lon, lat, height = 0] = coords;
+        const carto = Cesium.Cartographic.fromDegrees(lon, lat, height);
+        const groundHeight = 0;
+        const tipHeight = 2000;
+        const base = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, groundHeight);
+        const tip = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, tipHeight);
+
+        entity.position = new Cesium.ConstantPositionProperty(tip);
+        entity.__localBaseCarto = carto;
+        entity.__localBaseCartesian = base;
+        const stemPositionBuffers = [[base, tip], [base, tip]];
+        entity.polyline = new Cesium.PolylineGraphics({
+          positions: stemPositionBuffers[0],
+          width: 3.5,
+          material: new Cesium.ColorMaterialProperty(markerColor),
+        });
+        entity.point = new Cesium.PointGraphics({
+          pixelSize: 10,
+          color: markerColor,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        });
+      } else if (geometry.type === 'Polygon') {
+        const coords = geometry.coordinates?.[0];
+        if (!coords || coords.length < 3) return;
+        const flatCoords = coords.flatMap((c) => [c[0], c[1], c[2] || 0]);
+        const positions = Cesium.Cartesian3.fromDegreesArrayHeights(flatCoords);
+        const center = Cesium.BoundingSphere.fromPoints(positions).center;
+        const carto = Cesium.Cartographic.fromCartesian(center);
+        const groundHeight = 0;
+        const tipHeight = 2000;
+        const base = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, groundHeight);
+        const tip = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, tipHeight);
+
+        entity.position = new Cesium.ConstantPositionProperty(tip);
+        entity.__localBaseCarto = carto;
+        entity.__localBaseCartesian = base;
+        // PolygonGraphics.hierarchy expects a PolygonHierarchy, not raw positions
+        entity.polygon = new Cesium.PolygonGraphics({
+          hierarchy: new Cesium.PolygonHierarchy(positions),
+          material: fill,
+          outline: true,
+          outlineColor: stroke,
+          outlineWidth: strokeWidth,
+          clampToGround,
+        });
+        const stemPositionBuffers = [[base, tip], [base, tip]];
+        entity.polyline = new Cesium.PolylineGraphics({
+          positions: stemPositionBuffers[0],
+          width: 3.5,
+          material: new Cesium.ColorMaterialProperty(markerColor),
+        });
+        entity.point = new Cesium.PointGraphics({
+          pixelSize: 10,
+          color: markerColor,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        });
+      } else if (geometry.type === 'LineString') {
+        const coords = geometry.coordinates;
+        if (!coords || coords.length < 2) return;
+        const positions = Cesium.Cartesian3.fromDegreesArrayHeights(
+          coords.flatMap((c) => [c[0], c[1], c[2] || 0]),
+        );
+        // Use the first position as the entity position for LineString
+        entity.position = new Cesium.ConstantPositionProperty(positions[0]);
+        entity.polyline = new Cesium.PolylineGraphics({
+          positions,
+          material: stroke,
+          width: strokeWidth,
+          clampToGround,
+        });
+      }
+    });
+
+    // Yield to event loop between batches (only in production)
+    if (!isTestEnv && i + effectiveBatchSize < total) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  return dataSource;
 }
 
 /**
@@ -586,18 +793,9 @@ export function createLocalGeoJsonLayer(
             try {
               let features = _cachedFeatures;
               if (!features) {
-                const response = await fetch(url, {
-                  signal: _loadController.signal,
-                });
+                // Parse GeoJSONL in a Web Worker to avoid blocking the main thread
+                features = await parseGeojsonLinesInWorker(url, id, _loadController.signal);
                 if (_destroyed) return;
-                // A 404 returns an HTML body that would otherwise die in JSON.parse
-                // one line later, reported as a parse error for a missing file.
-                if (!response.ok) {
-                  throw new Error(`HTTP ${response.status ?? '?'}`);
-                }
-                const text = await response.text();
-                if (_destroyed) return;
-                features = parseGeojsonLines(text);
                 _cachedFeatures = features;
               }
 
@@ -606,14 +804,18 @@ export function createLocalGeoJsonLayer(
                 features,
               };
 
-              // Natively parse into entities and use it as our _dataSource
-              loaded = await Cesium.GeoJsonDataSource.load(geojson, {
+              // Create entities in batches to avoid blocking the main thread.
+              // Replace Cesium.GeoJsonDataSource.load() with manual batched creation.
+              loaded = await createBatchedDataSource(geojson, {
                 clampToGround: true,
                 stroke: baseColor,
                 fill: baseColor.withAlpha(0.3),
                 strokeWidth: 2,
                 markerSize: 8,
                 markerColor: baseColor,
+                name,
+                batchSize: 500,
+                signal: _loadController.signal,
               });
 
               if (_destroyed) return;
@@ -633,7 +835,8 @@ export function createLocalGeoJsonLayer(
                 return;
               }
 
-              // Convert parsed points into 3D stems or style polygons
+              // Entities are already created with stems in createBatchedDataSource.
+              // Post-process: tag entities, register contexts, build stem records.
               const entities = loaded.entities.values;
               _count = entities.length;
               _stemRecords = [];
@@ -641,54 +844,18 @@ export function createLocalGeoJsonLayer(
 
               for (let i = 0; i < entities.length; i++) {
                 const feature = entities[i];
-                feature.__localLayerId = id; // Tag it so our click handler knows it belongs to this layer
+                feature.__localLayerId = id;
 
-                let pos = feature.position?.getValue(Cesium.JulianDate.now());
+                const carto = feature.__localBaseCarto;
+                const base = feature.__localBaseCartesian;
+                if (!carto || !base) continue;
 
-                if (!pos) {
-                  // It's a polygon or line
-                  if (feature.polygon) {
-                    feature.polygon.outline = true;
-                    feature.polygon.outlineColor = baseColor;
+                const tip = feature.position?.getValue(Cesium.JulianDate.now());
+                if (!tip) continue;
 
-                    // Calculate center point for the stem
-                    const hierarchy = feature.polygon.hierarchy?.getValue(
-                      Cesium.JulianDate.now(),
-                    );
-                    if (
-                      hierarchy &&
-                      hierarchy.positions &&
-                      hierarchy.positions.length > 0
-                    ) {
-                      pos = Cesium.BoundingSphere.fromPoints(
-                        hierarchy.positions,
-                      ).center;
-                    }
-                  }
-                }
-
-                if (!pos) continue;
-
-                const carto = Cesium.Cartographic.fromCartesian(pos);
-                const groundHeight = 0; // Ellipsoid surface until a scene sample lands
-                const tipHeight = 2000; // Initial Stem height
-
-                const base = Cesium.Cartesian3.fromRadians(
-                  carto.longitude,
-                  carto.latitude,
-                  groundHeight,
-                );
-                const tip = Cesium.Cartesian3.fromRadians(
-                  carto.longitude,
-                  carto.latitude,
-                  tipHeight,
-                );
                 const properties = propertyObject(feature);
                 const recordId = String(feature.id ?? i);
 
-                // Store references for bounded stem scaling and native picking.
-                feature.__localBaseCarto = carto;
-                feature.__localBaseCartesian = base;
                 registerEntityContext(feature, {
                   id: `${id}:${recordId}`,
                   layerId: id,
@@ -705,29 +872,10 @@ export function createLocalGeoJsonLayer(
                   ),
                 });
 
-                // Constant properties are refreshed on the existing 450 ms source
-                // cadence. Cesium no longer evaluates 2-3 callbacks per entity on
-                // every frame, while the point/stem pick surface stays native.
-                feature.position = tip;
                 const stemPositionBuffers = [
                   [base, tip],
                   [base, tip],
                 ];
-                feature.polyline = new Cesium.PolylineGraphics({
-                  positions: stemPositionBuffers[0],
-                  width: 3.5,
-                  material: new Cesium.ColorMaterialProperty(baseColor),
-                });
-                feature.point = new Cesium.PointGraphics({
-                  pixelSize: 10,
-                  color: baseColor,
-                  outlineColor: Cesium.Color.BLACK,
-                  outlineWidth: 2,
-                  // Never depth-cull the anchor against the photoreal mesh —
-                  // globe-horizon culling is handled by the pre-render occluder.
-                  disableDepthTestDistance: Number.POSITIVE_INFINITY,
-                });
-
                 const priority = labelPriorityFromProperties(properties, id);
                 _stemRecords.push({
                   id: recordId,
@@ -738,7 +886,7 @@ export function createLocalGeoJsonLayer(
                   nextTip: Cesium.Cartesian3.clone(tip),
                   stemPositionBuffers,
                   stemPositionBufferIndex: 0,
-                  groundHeight,
+                  groundHeight: 0,
                   groundSampled: false,
                   lastGroundSampleMs: 0,
                   priority,
@@ -777,7 +925,14 @@ export function createLocalGeoJsonLayer(
               removeEntityContextsForLayer(id);
               _count = 0;
               _stemRecords = [];
-              console.error(`Failed to load ${id}:`, e);
+              console.error(`[${id}] Failed to load:`, e);
+              // Log stack trace for debugging
+              if (e instanceof Error && e.stack) {
+                console.error(`[${id}] Stack:`, e.stack);
+              }
+              // NOTE: We do NOT re-throw here. The layer's getStats() will report
+              // the error, and the data manager will show the layer as failed.
+              // This matches the expected behavior for post-processing failures.
             }
 
             if (_destroyed) return;
