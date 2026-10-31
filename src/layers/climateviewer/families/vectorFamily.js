@@ -58,6 +58,7 @@ export function createVectorFamily(
   let progressive = false;
   let lastUpdate = null;
   let spotlightAlpha = 1;
+  let clusterShowHandler = null;
   const spotlightColors = new WeakMap();
 
   function applySpotlight(source = dataSource) {
@@ -101,6 +102,9 @@ export function createVectorFamily(
         proxyUrl,
         signal,
       });
+      // Some loaders return a data source without readyPromise; DataSourceDisplay
+      // and downstream tooling treat that as "not ready". Keep the contract.
+      if (!source.readyPromise) source.readyPromise = Promise.resolve(source);
       if (signal.aborted || epoch !== generation || !enabled) {
         source.show = false;
         return false;
@@ -118,6 +122,47 @@ export function createVectorFamily(
       source.show = true;
       applySpotlight(source);
       await viewer.dataSources.add(source);
+      // Ensure EntityCluster's primitive collections are added to the scene's primitives
+      // so they participate in rendering and picking. DataSourceDisplay adds the entityCluster
+      // (a non-Primitive) to the data source's primitives, which breaks pick recursion.
+      // Instead, add the cluster's billboard/label/point collections directly to the
+      // scene's primitives where they can be properly rendered and picked.
+      // Keep their show state in sync with the data source.
+      if (source.clustering) {
+        const cluster = source.clustering;
+        const scenePrimitives = viewer.scene.primitives;
+        const syncShow = () => {
+          const show = source.show;
+          if (cluster._billboardCollection) cluster._billboardCollection.show = show;
+          if (cluster._labelCollection) cluster._labelCollection.show = show;
+          if (cluster._pointCollection) cluster._pointCollection.show = show;
+        };
+        const checkAndAdd = () => {
+          if (!enabled || dataSource !== source || !source.show) return;
+          let added = false;
+          if (cluster._billboardCollection && !scenePrimitives.contains(cluster._billboardCollection)) {
+            scenePrimitives.add(cluster._billboardCollection);
+            added = true;
+          }
+          if (cluster._labelCollection && !scenePrimitives.contains(cluster._labelCollection)) {
+            scenePrimitives.add(cluster._labelCollection);
+            added = true;
+          }
+          if (cluster._pointCollection && !scenePrimitives.contains(cluster._pointCollection)) {
+            scenePrimitives.add(cluster._pointCollection);
+            added = true;
+          }
+          if (added) syncShow();
+          else if (!cluster._billboardCollection && !cluster._labelCollection && !cluster._pointCollection) {
+            // Collections are created lazily on the first visualizer update.
+            viewer.scene?.requestRender?.();
+            requestAnimationFrame(checkAndAdd);
+          }
+        };
+        requestAnimationFrame(checkAndAdd);
+        clusterShowHandler = syncShow;
+        source.addEventListener?.('changed', clusterShowHandler);
+      }
       if (epoch !== generation || !enabled) {
         viewer.dataSources.remove(source, true);
         return false;
@@ -177,6 +222,27 @@ export function createVectorFamily(
     markerPopup?.destroy();
     markerPopup = null;
     if (dataSource && viewer) {
+      // The cluster's billboard/label/point collections are owned by the data
+      // source's EntityCluster, which destroys them with the data source.
+      // Detach them from scene.primitives first, without destroying, or a
+      // stale destroyed primitive stays in the scene and throws on next render.
+      const cluster = dataSource.clustering;
+      const scenePrimitives = viewer.scene?.primitives;
+      if (cluster && scenePrimitives) {
+        const destroyPrimitives = scenePrimitives.destroyPrimitives;
+        scenePrimitives.destroyPrimitives = false;
+        for (const collection of [
+          cluster._billboardCollection,
+          cluster._labelCollection,
+          cluster._pointCollection,
+        ]) {
+          if (collection && scenePrimitives.contains(collection))
+            scenePrimitives.remove(collection);
+        }
+        scenePrimitives.destroyPrimitives = destroyPrimitives;
+      }
+      dataSource.removeEventListener?.('changed', clusterShowHandler);
+      clusterShowHandler = null;
       viewer.dataSources.remove(dataSource, true);
       dataSource = null;
     }

@@ -145,7 +145,7 @@ export function createMarkerPopup(viewer, { layer, dataSource }) {
     // Health status from catalog
     const healthStatus = layer?.metadata?.health?.status;
     if (healthStatus && healthStatus !== 'ok') {
-      health.textContent = `Health: ${healthStatus}`;
+      health.textContent = t('Health: {status}', { status: healthStatus });
       health.hidden = false;
     } else {
       health.hidden = true;
@@ -193,15 +193,53 @@ export function createMarkerPopup(viewer, { layer, dataSource }) {
     popup.style.top = `${top}px`;
   };
 
+  // Entity billboards drawn through Cesium's EntityCluster are not always
+  // returned by scene.pick(). Fall back to the nearest on-screen entity that
+  // is not hidden by the globe, so a click still opens the marker card.
+  const PICK_RADIUS_PX = 16;
+  const project = (position) => {
+    const screen = viewer.scene.cartesianToCanvasCoordinates(position);
+    return screen && Number.isFinite(screen.x) && Number.isFinite(screen.y)
+      ? screen
+      : null;
+  };
+  const isGlobeVisible = (position) => {
+    const scene = viewer.scene;
+    const occluder = scene.globe?.ellipsoid
+      ? new Cesium.EllipsoidalOccluder(scene.globe.ellipsoid, scene.camera.positionWC)
+      : null;
+    return !occluder || occluder.isPointVisible(position);
+  };
+  const entityAt = (screenPosition) => {
+    const now = Cesium.JulianDate.now();
+    let best = null;
+    let bestDistance = PICK_RADIUS_PX;
+    for (const candidate of dataSource.entities.values) {
+      const position = getEntityPosition(candidate);
+      if (!position || !isGlobeVisible(position)) continue;
+      const screen = project(position);
+      if (!screen) continue;
+      const distance = Math.hypot(screen.x - screenPosition.x, screen.y - screenPosition.y);
+      if (distance <= bestDistance) {
+        bestDistance = distance;
+        best = candidate;
+      }
+    }
+    return best ?? null;
+  };
+
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((movement) => {
     const picked = viewer.scene.pick(movement.position);
-    const entity = picked?.id;
+    let entity = picked?.id;
     if (
       !entity ||
       dataSource.entities.getById(entity.id) !== entity ||
       !entity.position
     ) {
+      entity = entityAt(movement.position);
+    }
+    if (!entity || !entity.position) {
       hide();
       return;
     }

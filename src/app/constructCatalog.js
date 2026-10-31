@@ -16,6 +16,7 @@ import { createMilitaryRegistry } from '../layers/aircraft/classification.js';
 import { createApplicationFlights } from './layers/flights.js';
 import { createApplicationMilitary } from './layers/militaryFlights.js';
 import { createApplicationVessels } from './layers/aisLiveVessels.js';
+import { createApplicationLocalAdsb } from './layers/localAdsb.js';
 import { createApplicationCctv } from './layers/cctv.js';
 import { createApplicationRadio } from './layers/radio.js';
 import { createApplicationTraffic } from './layers/traffic.js';
@@ -27,7 +28,6 @@ import { createApplicationInstallations } from './layers/militaryInstallations.j
 import { createApplicationSatellites } from './layers/satellites.js';
 import { createApplicationLaunches } from './layers/rocketLaunches.js';
 import { createApplicationAlpr } from './layers/alprCameras.js';
-import { createApplicationLocalAdsb } from './layers/localAdsb.js';
 import { createApplicationAwareness } from './layers/militaryAwareness.js';
 import { createApplicationFirms } from './layers/firms.js';
 import { createApplicationEarthquakes } from './layers/earthquakes.js';
@@ -67,51 +67,6 @@ export const APPLICATION_LAYER_METADATA = Object.freeze([
   ...CLIMATEVIEWER_LAYER_METADATA,
   ...LOCAL_ONLY_LAYER_METADATA,
 ]);
-
-/** Create minimal placeholder layers for ClimateViewer to satisfy catalog validation. */
-function createClimateViewerPlaceholders() {
-  return CLIMATEVIEWER_LAYERS.map((def) => ({
-    id: def.id,
-    name: def.name,
-    icon: '🗺️',
-    source: 'ClimateViewer',
-    showInTogglePanel: true,
-    panelGroup: 'ClimateViewer',
-    category: def.category.join(' › '),
-    family: def.family,
-    role: def.role,
-    keyRequired: def.family === 'bing',
-    metadata: {
-      cvId: def.cvId,
-      description: def.description,
-      sourceUrl: def.sourceUrl,
-      category: def.category.join(' › '),
-      sublayers: def.sublayers,
-      flags: def.flags,
-      family: def.family,
-      role: def.role,
-      providerUrl: def.url,
-      traits: def.traits,
-      health: def.health,
-    },
-    init() {},
-    enable() { return true; },
-    disable() {},
-    update() { return false; },
-    destroy() {},
-    attachMapStackController() {},
-    attachDataManager() {},
-    getAnalystRecords() { return []; },
-    zoomTo() { return false; },
-    getStats() {
-      return {
-        count: 0,
-        status: 'idle',
-        available: true,
-      };
-    },
-  }));
-}
 
 /** Construct the current catalog without choosing any source provider.
  * Scene engines remain page-owned; layers and classification have this app's lifetime.
@@ -170,6 +125,14 @@ export function createApplicationCatalog({
     });
     const satellites = createApplicationSatellites({
       source: sources.satellites,
+    });
+    // Create real ClimateViewer layers upfront (not placeholders) so they
+    // participate in lifecycle management, horizon culling, and pick ownership
+    // from boot without requiring the panel to open.
+    const climateViewerLayers = createClimateViewerLayers({
+      clock: climateViewerClock,
+      resolveAsset,
+      proxyUrl: readClimateViewerProxyUrl(),
     });
     const catalog = createLayerCatalog(
       [
@@ -235,9 +198,9 @@ export function createApplicationCatalog({
         }),
         createCyclonesLayer({ feed: sources.cyclones }),
         ...createInfrastructureLayers(localGeoJsonServices),
-        // ClimateViewer placeholder layers: minimal objects to satisfy catalog
-        // metadata validation. Real layers are created lazily when the panel opens.
-        ...createClimateViewerPlaceholders(),
+        // Real ClimateViewer layers (not placeholders) registered for lifecycle,
+        // horizon culling, and pick ownership from boot.
+        ...climateViewerLayers,
         createApplicationCables({ source: sources.cables }),
         createApplicationFirms({
           surface,
@@ -260,13 +223,7 @@ export function createApplicationCatalog({
       weatherClock,
       climateViewerClock,
       climateViewerHealth: CLIMATEVIEWER_HEALTH,
-      createClimateViewerLayers: (options = {}) =>
-        createClimateViewerLayers({
-          clock: climateViewerClock,
-          resolveAsset,
-          proxyUrl: readClimateViewerProxyUrl(),
-          ...options,
-        }),
+      createClimateViewerLayers: () => climateViewerLayers,
     });
   } catch (error) {
     dispose();

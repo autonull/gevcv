@@ -732,18 +732,8 @@ export class LayerPanel {
     const initializeLayers = () => {
       if (initialized) return;
       initialized = true;
-      layers = createLayers({
-        clock: this.climateViewerClock,
-        resolveAsset: this._resolveAsset,
-        proxyUrl: readClimateViewerProxyUrl(globalThis.window?.localStorage),
-      });
-      // Register real ClimateViewer layers with dataManager so they participate
-      // in lifecycle management, horizon culling, and pick ownership.
-      if (this._registerLayer) {
-        for (const layer of layers) {
-          this._registerLayer(layer);
-        }
-      }
+      // Use already-registered ClimateViewer layers from dataManager
+      layers = this.getAll().filter((l) => l.panelGroup === 'ClimateViewer');
       layerById = new Map(layers.map((layer) => [layer.id, layer]));
       tree = createClimateViewerTree(catalog.tree ?? [], layers);
       this._climateViewerTree = tree;

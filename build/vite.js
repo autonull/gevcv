@@ -155,7 +155,10 @@ export function createBrowserViteConfig({
       apiResponseHeadersPlugin(),
       // Next, so no provider route answers a Host the server does not allow.
       hostCheckPlugin(),
-      cesium(),
+      // Build Cesium from source so app code and scene share one instance with
+      // stable private field names. The prebuilt external copy leaves entity
+      // cluster billboards unpickable (EntityCluster exposes no pick()).
+      cesium({ rebuildCesium: true }),
       applicationHtmlPlugin(),
       ...plugins,
       embedFramingPlugin(),
