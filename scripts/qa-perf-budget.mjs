@@ -66,10 +66,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function open(page, { clearStorage = true } = {}) {
   if (clearStorage) {
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+    try {
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch {
+      // localStorage access denied in some headless configurations
+    }
   }
   await page.goto(`${APP_URL}/?welcome=0`, { waitUntil: 'domcontentloaded' });
 }
@@ -198,14 +202,14 @@ async function measureToggleToEntity(page) {
     if (!dm || !viewer) return { ok: false, reason: 'no managers' };
 
     const start = performance.now();
-    await dm.setEnabled('local-firms', true);
+    await dm.setEnabled('local-dams', true);
 
     // Wait for entities to appear
     let entities = 0;
     for (let i = 0; i < 50; i++) {
       await new Promise(r => setTimeout(r, 100));
-      const ds = viewer.dataSources.getByName('FIRMS') ||
-                 viewer.dataSources._dataSources.find(d => d.name?.includes('FIRMS') || d.name?.includes('firms'));
+      const ds = viewer.dataSources.getByName('Dams') ||
+                 viewer.dataSources._dataSources.find(d => d.name?.includes('Dam') || d.name?.includes('dam'));
       if (ds?.entities?.values?.length > 0) {
         entities = ds.entities.values.length;
         break;

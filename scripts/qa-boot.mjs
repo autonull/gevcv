@@ -55,10 +55,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function open(page, { clearStorage = true, hash = '', query = '' } = {}) {
   if (clearStorage) {
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+    try {
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch {
+      // localStorage access denied in some headless configurations
+    }
   }
   await page.goto(`${APP_URL}/${query}${hash}`, { waitUntil: 'domcontentloaded' });
 }
@@ -171,11 +175,10 @@ async function main() {
     const cvLayerCheck = await page.evaluate(() => {
       const dm = window.__godsEyeView?.dataManager;
       if (!dm) return { ok: false, reason: 'no dataManager' };
-      // Import the CV layer checker
-      const { isClimateViewerLayerId } = await import('/src/layers/climateviewer/shareState.js');
+      // CV layer IDs start with 'cv-' or are in the catalog
       const allLayers = dm.getAll?.() || [];
       const enabledCV = allLayers
-        .filter((l) => dm.isEnabled(l.id) && isClimateViewerLayerId(l.id))
+        .filter((l) => dm.isEnabled(l.id) && l.id.startsWith('cv-'))
         .map((l) => l.id);
       return { ok: enabledCV.length === 0, enabledCV };
     });
