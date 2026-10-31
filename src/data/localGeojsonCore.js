@@ -398,7 +398,7 @@ async function createBatchedDataSource(geojson, options) {
     const batch = features.slice(i, i + effectiveBatchSize);
     batch.forEach((feature, batchIndex) => {
       const entity = dataSource.entities.add({
-        id: feature.id ?? String(i + batchIndex),
+        id: `${name}-${i + batchIndex}`,
         name: feature.properties?.name,
         properties: feature.properties,
       });
@@ -432,43 +432,89 @@ async function createBatchedDataSource(geojson, options) {
           outlineWidth: 2,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         });
-      } else if (geometry.type === 'Polygon') {
-        const coords = geometry.coordinates?.[0];
-        if (!coords || coords.length < 3) return;
-        const flatCoords = coords.flatMap((c) => [c[0], c[1], c[2] || 0]);
-        const positions = Cesium.Cartesian3.fromDegreesArrayHeights(flatCoords);
-        const center = Cesium.BoundingSphere.fromPoints(positions).center;
-        const carto = Cesium.Cartographic.fromCartesian(center);
-        const groundHeight = 0;
-        const tipHeight = 2000;
-        const base = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, groundHeight);
-        const tip = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, tipHeight);
+      } else if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
+        const polygons = geometry.type === 'MultiPolygon'
+          ? geometry.coordinates
+          : [geometry.coordinates];
+        
+        let polygonHierarchy = null;
+        let stemCarto = null;
+        let stemBase = null;
+        let stemTip = null;
+        
+        for (let polyIndex = 0; polyIndex < polygons.length; polyIndex++) {
+          const polygon = polygons[polyIndex];
+          if (!polygon || polygon.length === 0) continue;
+          
+          const outerRing = polygon[0];
+          if (!outerRing || outerRing.length < 3) continue;
+          
+          const outerFlat = outerRing.flatMap((c) => [c[0], c[1], c[2] || 0]);
+          const outerPositions = Cesium.Cartesian3.fromDegreesArrayHeights(outerFlat);
+          
+          if (outerPositions.length === 0) continue;
+          
+          // Create hierarchy for this polygon (outer ring + holes)
+          const holeHierarchies = [];
+          for (let i = 1; i < polygon.length; i++) {
+            const hole = polygon[i];
+            if (!hole || hole.length < 3) continue;
+            const holeFlat = hole.flatMap((c) => [c[0], c[1], c[2] || 0]);
+            const holePositions = Cesium.Cartesian3.fromDegreesArrayHeights(holeFlat);
+            if (holePositions.length > 0) {
+              holeHierarchies.push(new Cesium.PolygonHierarchy(holePositions));
+            }
+          }
+          const hierarchy = new Cesium.PolygonHierarchy(outerPositions, holeHierarchies);
+          
+          // Use the first polygon's center for the stem position
+          if (!stemCarto) {
+            const center = Cesium.BoundingSphere.fromPoints(outerPositions).center;
+            stemCarto = Cesium.Cartographic.fromCartesian(center);
+            const groundHeight = 0;
+            const tipHeight = 2000;
+            stemBase = Cesium.Cartesian3.fromRadians(stemCarto.longitude, stemCarto.latitude, groundHeight);
+            stemTip = Cesium.Cartesian3.fromRadians(stemCarto.longitude, stemCarto.latitude, tipHeight);
 
-        entity.position = new Cesium.ConstantPositionProperty(tip);
-        entity.__localBaseCarto = carto;
-        entity.__localBaseCartesian = base;
-        // PolygonGraphics.hierarchy expects a PolygonHierarchy, not raw positions
-        entity.polygon = new Cesium.PolygonGraphics({
-          hierarchy: new Cesium.PolygonHierarchy(positions),
-          material: fill,
-          outline: true,
-          outlineColor: stroke,
-          outlineWidth: strokeWidth,
-          clampToGround,
-        });
-        const stemPositionBuffers = [[base, tip], [base, tip]];
-        entity.polyline = new Cesium.PolylineGraphics({
-          positions: stemPositionBuffers[0],
-          width: 3.5,
-          material: new Cesium.ColorMaterialProperty(markerColor),
-        });
-        entity.point = new Cesium.PointGraphics({
-          pixelSize: 10,
-          color: markerColor,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        });
+            entity.position = new Cesium.ConstantPositionProperty(stemTip);
+            entity.__localBaseCarto = stemCarto;
+            entity.__localBaseCartesian = stemBase;
+            
+            const stemPositionBuffers = [[stemBase, stemTip], [stemBase, stemTip]];
+            entity.polyline = new Cesium.PolylineGraphics({
+              positions: stemPositionBuffers[0],
+              width: 3.5,
+              material: new Cesium.ColorMaterialProperty(markerColor),
+            });
+            entity.point = new Cesium.PointGraphics({
+              pixelSize: 10,
+              color: markerColor,
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 2,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            });
+          }
+          
+          // Build combined hierarchy
+          if (!polygonHierarchy) {
+            polygonHierarchy = hierarchy;
+          } else {
+            // For MultiPolygon, add subsequent polygons as children of the first polygon's hierarchy
+            polygonHierarchy.children = [...(polygonHierarchy.children || []), hierarchy];
+          }
+        }
+        
+        // Assign the polygon graphics
+        if (polygonHierarchy) {
+          entity.polygon = new Cesium.PolygonGraphics({
+            hierarchy: polygonHierarchy,
+            material: fill,
+            outline: true,
+            outlineColor: stroke,
+            outlineWidth: strokeWidth,
+            clampToGround,
+          });
+        }
       } else if (geometry.type === 'LineString') {
         const coords = geometry.coordinates;
         if (!coords || coords.length < 2) return;
